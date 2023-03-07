@@ -182,6 +182,7 @@ if __name__ == "__main__":
             'label': dev_settings['label'],
             'exposure_mode': 'auto'
         }
+        #add assertion if the camera is not found
         #stream_acquisition = 
         processes.append(Process(target=StreamAcquisition(UVC_Source, arg_dict, acquisition_logic, SAVE_DIR).stream_acquisition))
     # start all processes
