@@ -5,7 +5,7 @@ from uvc_stream import DEV_SETTINGS
 
 class VideoGet :
     def __init__(self, src=0, camera_name=''):
-        self.stream = cv2.VideoCapture(src, cv2.CAP_DSHOW)
+        self.stream = cv2.VideoCapture(src) #, cv2.CAP_DSHOW)
         self.stream.set(cv2.CAP_PROP_FRAME_WIDTH, DEV_SETTINGS['pupil_invisible'][camera_name]['frame_size'][0])
         self.stream.set(cv2.CAP_PROP_FRAME_HEIGHT, DEV_SETTINGS['pupil_invisible'][camera_name]['frame_size'][1])
         self.stream.set(cv2.CAP_PROP_FPS, DEV_SETTINGS['pupil_invisible'][camera_name]['fps'])
@@ -64,8 +64,13 @@ def launch_camera_streams():
         t = threading.Thread(target=camera_stream, args=(i+1, camera_name))
         threads.append(t)
         t.start()
+
     for thread in threads:
         thread.join()
 
-#world always works, eye camera only work for one eye at a time
-launch_camera_streams()
+#lanch all 3 cameras
+#launch_camera_streams()
+
+#launch only left eye camera
+t = threading.Thread(target=camera_stream, args=(0, 'eye_left'))
+t.start()
