@@ -47,6 +47,7 @@ class AcquisitionLogic:
         self.t_store = self.t_record * 2.0
 
         self.action_key = keyboard.Key.up
+        
 
     def on_press(self, key):
         # Skip. Recording is already activated.
