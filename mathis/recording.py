@@ -11,7 +11,7 @@ print("Device found!")
 
 class AcquisitionLogic:
     def __init__(self) -> None:
-        #TODO: check on device if recording or not
+        #TODO: check on device if recording or not isntead of using a bool
         self.recording_bool = False
         self.event_id = 0
 
