@@ -26,13 +26,16 @@ def get_recordings():
 class  Recording_Processor:
     def __init__(self, recording_id):
         self.recording_id = recording_id
+        self.recording_events = None
 
     # process recording by id
     def process_recording(self):
         self.download_recording()
+        self.download_recording_events()
         #self.curate_recording(recording_id)
 
-    #download recording by id 
+    #download and extract recording by id
+    #TODO: use os.path.join instead of + for paths 
     def download_recording(self):
         #check if recording already downloaded
         if os.path.exists(recording_folder + '/' + str(self.recording_id)):
@@ -56,7 +59,10 @@ class  Recording_Processor:
 
         except ApiException as e:
             print("Exception when calling RecordingsApi->download_recording_zip: %s\n" % e)
-        
+            
+    #TODO: implement this
+    def download_recording_events(self):
+        pass    
     #curate recording by id 
     #TODO: implement
     def curate_recording(self):
@@ -68,13 +74,11 @@ class  Recording_Processor:
 
 #process all recordings 
 # created an object for this because it should be easier to implement multiprocessing
-#TODO: implement
+#TODO: implement multiprocessing
 def process_all_recordings():
     recording_ids = get_recordings()
     for recording_id in recording_ids:
         recording_processor = Recording_Processor(recording_id)
-        recording_processor.process_recording(recording_id)
+        recording_processor.process_recording()
 
-#download first recording
-recording_processor = Recording_Processor(get_recordings()[0])
-recording_processor.process_recording()
+process_all_recordings()
