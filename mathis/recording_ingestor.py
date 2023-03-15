@@ -4,17 +4,18 @@ from pupilcloud import Api, ApiException
 import requests
 import zipfile
 import os
+from extract_frames import extract_frames
+
 #object to download process one recording
-class  recordingIngestor:
+class  recordingDownloader:
     def __init__(self, recording_id, recordings_folder, api):
         self.recording_id = recording_id
         self.recording_folder = recordings_folder + '/' + str(self.recording_id) 
         self.api = api
     # process recording by id
-    def process_recording(self):
+    def download_recording_and_events(self):
         self.download_recording_videos()
         self.download_recording_events()
-        self.curate_recording()
 
     #download and extract recording by id
     #TODO: use os.path.join instead of + for paths     
@@ -35,7 +36,7 @@ class  recordingIngestor:
             with open(self.recording_folder + ".zip", "rb") as data:
                 zipped_recording =  zipfile.ZipFile(data)
                 os.mkdir(self.recording_folder)      
-                ############################################
+                #extract all files to folder
                 zipped_recording.extractall(self.recording_folder + "/") #extract("new_hello.txt", path="output_dir/")
                 #move all files to parent folder and delete folder
                 subfolder_name = os.listdir(self.recording_folder + "/")[0]
@@ -48,7 +49,7 @@ class  recordingIngestor:
         except ApiException as e:
             print("Exception when calling RecordingsApi->download_recording_zip: %s\n" % e)
 
-    #TODO: using requests because python API somehow give None as response
+    #download recording events by id
     def download_recording_events(self):
         #response = self.api.get_recording_events(self.recording_id)
         try :
@@ -60,11 +61,16 @@ class  recordingIngestor:
         with open(self.recording_folder + "/events.json", "w") as f:
             f.write(str(events))
 
+
+class recordingCurator:
+    def __init__(self, recording_id):
+        self.recording_id = recording_id
+        print("Curating recording:" + str(self.recording_id))
     #curate recording by id 
     #TODO: implement
     def curate_recording(self):
         #remove unecessary files
-        #only keep frames that are 2 seconds after the event
-        #remove blinks thanks to file 
+        #remove blinks thanks to file
         # ~convert video to images
+        extract_frames(self.recording_id)
         pass
