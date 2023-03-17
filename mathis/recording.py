@@ -64,6 +64,9 @@ class AcquisitionLogic:
         #assertions
         assert self.recording_bool == True, "Need to record to be able to trigger events"
         #set event
+        
+        #TODO: check if time_ns is actually sent to the device somehow 
+        # if not need to save it locally and process it later on
         device.send_event(str(self.event_id), event_timestamp_unix_ns=time_ns())
         print(f'Triggered Event. ({self.t_event} s)')
         self.event_id += 1

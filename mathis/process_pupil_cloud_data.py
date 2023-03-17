@@ -17,14 +17,6 @@ def get_recordings():
     return recording_ids
 
 ##############################################################################################
-#process all recordings 
-# created an object for this because it should be easier to implement multiprocessing
-#TODO: implement multiprocessing
-"""def download_all_recordings():
-    recording_ids = get_recordings()
-    for recording_id in recording_ids:
-        recording_downloader = recordingDownloader(recording_id, recordings_folder, api)
-        recording_downloader.download_recording_and_events()"""
 
 def download_all_recordings_multiprocessing():
     recording_ids = get_recordings()
@@ -43,12 +35,8 @@ def curate_all_recordings_multiprocessing():
     for recording in recordings:
         if not os.path.exists(recordings_folder + recording + "/left_eye_frames"): #TODO: make this prettiermaybe? or create metadata file that says if curated or not
             to_curate.append(recording)
-    #FIXME: multiprocessing doesn't work here, error: TypeError: __init__() missing 2 required positional arguments: 'stdout' and 'stderr
     pool = multiprocessing.Pool(processes=4)
     pool.map(curate_recording, to_curate)
-    #for recording in to_curate:
-    #    curate_recording(recording)
-
 
 def curate_recording(recording_id):
     recording_curator = recordingCurator(recording_id)
