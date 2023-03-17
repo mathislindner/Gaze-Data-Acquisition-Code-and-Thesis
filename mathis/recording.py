@@ -4,7 +4,7 @@ from pupil_labs.realtime_api.simple import Device
 import pynput.keyboard as keyboard
 from time import time_ns
 
-ip = "10.5.50.141"
+ip = "10.5.50.53"
 device = Device(address=ip, port="8080")
 assert device is not None, "No device found"
 print("Device found!")
@@ -22,6 +22,7 @@ class AcquisitionLogic:
         self.start_record_key = keyboard.Key.up
         self.stop_record_key = keyboard.Key.down
         self.event_key = keyboard.Key.right
+        self.event_key = keyboard.Key.esc
 
     def on_press(self, key):
         if key is self.start_record_key:
@@ -31,15 +32,9 @@ class AcquisitionLogic:
             self.start_record_process()
         
         if key is self.stop_record_key:
-            if self.recording_bool == False:
-                raise Exception('Wait! Recording is not activated.')
-            #else stop recording process
             self.stop_record_process()
         
         if key is self.event_key:
-            if self.recording_bool == False:
-                raise Exception('Need to record to be able to trigger events')
-            #else trigger event
             self.trigger_event_process()
 
     def start_record_process(self):
@@ -54,15 +49,21 @@ class AcquisitionLogic:
         self.recording_bool = True
 
     def stop_record_process(self):
-        #stop recording
+        if self.recording_bool == False:
+            print('Wait! Recording is not activated.')
+            return
+        #else stop recording process
         device.recording_stop_and_save()
         print(f'Ended recording event.')
         self.recording_bool = False
         
 
     def trigger_event_process(self):
-        #assertions
-        assert self.recording_bool == True, "Need to record to be able to trigger events"
+        #if recording is not activated go back to key listener
+        if self.recording_bool == False:
+            print('Need to record to be able to trigger events')
+            return
+        
         #set event
         
         #TODO: check if time_ns is actually sent to the device somehow 
@@ -71,6 +72,13 @@ class AcquisitionLogic:
         print(f'Triggered Event. ({self.t_event} s)')
         self.event_id += 1
 
+    def exit_process(self):
+        if self.recording_bool == True:
+            print('Wait! Recording is currently activated.')
+            return
+        print('Exiting program...')
+        device.close()
+        exit()
 
 acquisition_logic = AcquisitionLogic()
 
