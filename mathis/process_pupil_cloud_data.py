@@ -6,7 +6,7 @@ from recording_ingestor import recordingDownloader, recordingCurator
 import os
 import multiprocessing
 
-#API object for all the requests, #FIXME: put in a config file
+#API object for all the requests, #FIXME: put in a config file, and create api object in the recording ingestor
 api = Api(api_key="K2xko4e9Vt9VXTuThUngAG2yKTW2ZRcenhEFe9K4tiSA", host="https://api.cloud.pupil-labs.com", downloads_path="mathis/recordings")
 recordings_folder = "mathis/recordings/"
 
@@ -24,7 +24,7 @@ def download_all_recordings_multiprocessing():
     pool.map(download_recording, recording_ids)
 
 def download_recording(recording_id):
-    recording_downloader = recordingDownloader(recording_id, recordings_folder, api)
+    recording_downloader = recordingDownloader(recording_id, api)
     recording_downloader.download_recording_and_events()
 
 def curate_all_recordings_multiprocessing():

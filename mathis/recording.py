@@ -5,7 +5,7 @@ import pynput.keyboard as keyboard
 from time import time_ns, sleep
 from constants import recordings_folder
 import os
-
+import json
 
 ip = "10.5.50.53"
 device = Device(address=ip, port="8080")
@@ -14,14 +14,10 @@ print("Device found!")
 
 class AcquisitionLogic:
     def __init__(self) -> None:
-        #TODO: check on device if recording or not isntead of using a bool
+        #TODO: check on device if recording or not isntead of using a bool (device._get_status())
+        
         self.recording_bool = False
         self.event_id = 0
-        self.recording_id = None
-
-        #constants
-        self.t_record =  60 #60 seconds of recording to test
-        self.t_event = 2.0 #this is the event of gaze
 
         self.start_record_key = keyboard.Key.up
         self.stop_record_key = keyboard.Key.down
@@ -54,8 +50,10 @@ class AcquisitionLogic:
         assert (freestorage > 5e9), "Not enough free storage on device" #at least 5GB space
         assert (battery > 0.1), "Battery is too low" #at least 10% battery
 
-        self.recording_id = device.recording_start()
-        print(f'Started recording event. ({self.t_record} s)')
+        recording_start_time = time_ns()
+        recording_id = device.recording_start()
+        self.save_offset_and_start_time(recording_id, recording_start_time)
+        print(f'Started recording event.')
         self.recording_bool = True
 
     def stop_record_process(self):
@@ -73,11 +71,7 @@ class AcquisitionLogic:
         if self.recording_bool == False:
             print('Need to record to be able to trigger events')
             return
-        
-        #set event
-        
-        #TODO: check if time_ns is actually sent to the device somehow 
-        # if not need to save it locally and process it later on
+        #else trigger event
         device.send_event(str(self.event_id), event_timestamp_unix_ns=time_ns())
         print(f'Triggered Event. ({self.t_event} s)')
         self.event_id += 1
@@ -91,18 +85,7 @@ class AcquisitionLogic:
         exit()
 
     #https://pupil-labs-realtime-api.readthedocs.io/en/latest/examples/simple.html#send-event
-    #TODO: test this out and see if it works
-    def save_time_offset(self):
-        # send event with current timestamp
-        print(
-            device.send_event(
-                "test event; timestamped by the client, relying on NTP for sync",
-                event_timestamp_unix_ns=time_ns(),
-            )
-        )
-
-        # Estimate clock offset between Companion device and client script
-        # (only needs to be done once)
+    def save_offset_and_start_time(self, recording_id, recording_start_time):
         estimate = device.estimate_time_offset()
         clock_offset_ns = round(estimate.time_offset_ms.mean * 1_000_000)
         print(f"Clock offset: {clock_offset_ns:_d} ns")
@@ -112,17 +95,16 @@ class AcquisitionLogic:
         current_time_ns_in_companion_clock = current_time_ns_in_client_clock - clock_offset_ns
         print(
             device.send_event(
-                "test event; timestamped by the client, manual clock offset correction",
+                "manual_clock_offset_correction",
                 event_timestamp_unix_ns=current_time_ns_in_companion_clock,
             )
         )
         #create folder in recording_id folder
-        os.mkdir(recordings_folder + self.recording_id)
-        #save offset to file
-        offset_string = "{offset: " + str(clock_offset_ns) + "}" # kinda ugly but works
-        with open (recordings_folder + self.recording_id + '/offset.txt', 'w') as f:
-            f.write(offset_string)
-
+        os.mkdir(recordings_folder + recording_id)
+        dictionary = { "system_start_time": recording_start_time, "offset": clock_offset_ns}
+        json_object = json.dumps(dictionary, indent = 4)
+        with open (recordings_folder + recording_id + '/start_time_and_offset.json', 'w') as f:
+            f.write(json_object)
 
 acquisition_logic = AcquisitionLogic()
 

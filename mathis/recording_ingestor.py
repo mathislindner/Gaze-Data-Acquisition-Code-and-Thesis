@@ -1,17 +1,18 @@
 import os
-from shutil import move
+import pandas as pd
+from synchronisation import convert_timestamps_to_system_time
 from pupilcloud import Api, ApiException
 from constants import *
 import requests
 import os
-from file_helper import extract_frames
-from file_helper import unzip_and_move_to_parent
+from file_helper import extract_frames, unzip_and_move_to_parent
 
 #object to download process one recording
 #TODO import from constants instead of the init arguments
 class  recordingDownloader:
-    def __init__(self, recording_id, recordings_folder, api):
-        self.workspace_id = "9ae5e987-5235-486f-8552-427014bbedcd"
+    def __init__(self, recording_id, api):
+        #FIXME create api object here and remove argument from init
+        self.workspace_id = workspace_id
         self.recording_id = recording_id
         self.recording_folder = recordings_folder + '/' + str(self.recording_id) 
         self.api_key = "K2xko4e9Vt9VXTuThUngAG2yKTW2ZRcenhEFe9K4tiSA"
@@ -52,8 +53,21 @@ class recordingCurator:
 
     #TODO: implement
     def curate_recording(self):
-        #remove unecessary files
-        #remove blinks thanks to file
-        # ~convert video to images
+        #TODO: remove unecessary files
+        #extract frames
         extract_frames(self.recording_id)
+        gaze_df = pd.read_csv(self.recording_folder + "/gaze.csv")
+        events_df = pd.read_csv(self.recording_folder + "/events.csv")
+        blinks_df = pd.read_csv(self.recording_folder + "/blinks.csv")
+
+        #TODO: use this function: convert_timestamps_to_system_time
+        #convert gaze_df timestamps to system_time_stamps
+        #convert events_df timestamps to system_time_stamps
+        #convert blinks_df timestamps to system_time_stamps
+        #convert all 3 camera timestamps to system_time_stamps
+        #make a big df with all of them together, matching them to the closest timestamps 
+
+
+        #find the matching frames from each camera and add them to the gaze_df as columns 
+        #remove blinks thanks to file
         pass
