@@ -2,7 +2,10 @@
 from pupil_labs.realtime_api.simple import Device
 
 import pynput.keyboard as keyboard
-from time import time_ns
+from time import time_ns, sleep
+from constants import recordings_folder
+import os
+
 
 ip = "10.5.50.53"
 device = Device(address=ip, port="8080")
@@ -14,6 +17,7 @@ class AcquisitionLogic:
         #TODO: check on device if recording or not isntead of using a bool
         self.recording_bool = False
         self.event_id = 0
+        self.recording_id = None
 
         #constants
         self.t_record =  60 #60 seconds of recording to test
@@ -23,6 +27,12 @@ class AcquisitionLogic:
         self.stop_record_key = keyboard.Key.down
         self.event_key = keyboard.Key.right
         self.event_key = keyboard.Key.esc
+
+        #sleep to statbilize the connection and save the offset
+        print("Initializing...")
+        sleep(2)
+        self.save_time_offset()
+        print("press up to start recording")
 
     def on_press(self, key):
         if key is self.start_record_key:
@@ -44,7 +54,7 @@ class AcquisitionLogic:
         assert (freestorage > 5e9), "Not enough free storage on device" #at least 5GB space
         assert (battery > 0.1), "Battery is too low" #at least 10% battery
 
-        recording_id = device.recording_start()
+        self.recording_id = device.recording_start()
         print(f'Started recording event. ({self.t_record} s)')
         self.recording_bool = True
 
@@ -79,6 +89,40 @@ class AcquisitionLogic:
         print('Exiting program...')
         device.close()
         exit()
+
+    #https://pupil-labs-realtime-api.readthedocs.io/en/latest/examples/simple.html#send-event
+    #TODO: test this out and see if it works
+    def save_time_offset(self):
+        # send event with current timestamp
+        print(
+            device.send_event(
+                "test event; timestamped by the client, relying on NTP for sync",
+                event_timestamp_unix_ns=time_ns(),
+            )
+        )
+
+        # Estimate clock offset between Companion device and client script
+        # (only needs to be done once)
+        estimate = device.estimate_time_offset()
+        clock_offset_ns = round(estimate.time_offset_ms.mean * 1_000_000)
+        print(f"Clock offset: {clock_offset_ns:_d} ns")
+
+        # send event with current timestamp, but correct it manual for possible clock offset
+        current_time_ns_in_client_clock = time_ns()
+        current_time_ns_in_companion_clock = current_time_ns_in_client_clock - clock_offset_ns
+        print(
+            device.send_event(
+                "test event; timestamped by the client, manual clock offset correction",
+                event_timestamp_unix_ns=current_time_ns_in_companion_clock,
+            )
+        )
+        #create folder in recording_id folder
+        os.mkdir(recordings_folder + self.recording_id)
+        #save offset to file
+        offset_string = "{offset: " + str(clock_offset_ns) + "}" # kinda ugly but works
+        with open (recordings_folder + self.recording_id + '/offset.txt', 'w') as f:
+            f.write(offset_string)
+
 
 acquisition_logic = AcquisitionLogic()
 
