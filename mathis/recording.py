@@ -18,16 +18,13 @@ class AcquisitionLogic:
         
         self.recording_bool = False
         self.event_id = 0
+        self.recording_id = None
 
         self.start_record_key = keyboard.Key.up
         self.stop_record_key = keyboard.Key.down
         self.event_key = keyboard.Key.right
-        self.event_key = keyboard.Key.esc
+        self.exit_key = keyboard.Key.esc
 
-        #sleep to statbilize the connection and save the offset
-        print("Initializing...")
-        sleep(2)
-        self.save_time_offset()
         print("press up to start recording")
 
     def on_press(self, key):
@@ -42,6 +39,9 @@ class AcquisitionLogic:
         
         if key is self.event_key:
             self.trigger_event_process()
+        
+        if key is self.exit_key:
+            self.exit_process()
 
     def start_record_process(self):
         #assertions
@@ -50,10 +50,10 @@ class AcquisitionLogic:
         assert (freestorage > 5e9), "Not enough free storage on device" #at least 5GB space
         assert (battery > 0.1), "Battery is too low" #at least 10% battery
 
-        recording_start_time = time_ns()
-        recording_id = device.recording_start()
-        self.save_offset_and_start_time(recording_id, recording_start_time)
-        print(f'Started recording event.')
+        pc_recording_start_time = time_ns()
+        self.recording_id = device.recording_start()
+        self.save_offset_and_start_time(pc_recording_start_time)
+        print(f'Started recording')
         self.recording_bool = True
 
     def stop_record_process(self):
@@ -62,18 +62,30 @@ class AcquisitionLogic:
             return
         #else stop recording process
         device.recording_stop_and_save()
-        print(f'Ended recording event.')
+        print(f'Ended recording.')
         self.recording_bool = False
+        self.event_id = 0
         
 
     def trigger_event_process(self):
+        event_timestamp = time_ns()
         #if recording is not activated go back to key listener
         if self.recording_bool == False:
             print('Need to record to be able to trigger events')
             return
         #else trigger event
-        device.send_event(str(self.event_id), event_timestamp_unix_ns=time_ns())
-        print(f'Triggered Event. ({self.t_event} s)')
+        device.send_event(str(self.event_id), event_timestamp_unix_ns=event_timestamp)
+        print(f'Triggered Event nr ({self.event_id})')
+        #save event to local_syncronisation.json
+        dictionary = {"Event: " + str(self.event_id) : event_timestamp}
+        with open(recordings_folder + self.recording_id + '/local_synchronisation.json', 'r') as f:
+            data = json.load(f)
+        data.update(dictionary)    
+        with open(recordings_folder + self.recording_id + '/local_synchronisation.json', 'w') as f:
+            
+            json_object = json.dumps(data, indent = 4)
+            f.write(json_object)
+
         self.event_id += 1
 
     def exit_process(self):
@@ -85,25 +97,24 @@ class AcquisitionLogic:
         exit()
 
     #https://pupil-labs-realtime-api.readthedocs.io/en/latest/examples/simple.html#send-event
-    def save_offset_and_start_time(self, recording_id, recording_start_time):
+    def save_offset_and_start_time(self, pc_recording_start_time):
+        #TODO: we can also use sections.csv that tells us whe the recording started and ended in companion clock.
         estimate = device.estimate_time_offset()
+
         clock_offset_ns = round(estimate.time_offset_ms.mean * 1_000_000)
         print(f"Clock offset: {clock_offset_ns:_d} ns")
 
         # send event with current timestamp, but correct it manual for possible clock offset
         current_time_ns_in_client_clock = time_ns()
         current_time_ns_in_companion_clock = current_time_ns_in_client_clock - clock_offset_ns
-        print(
-            device.send_event(
-                "manual_clock_offset_correction",
+        device.send_event("manual_clock_offset_correction",
                 event_timestamp_unix_ns=current_time_ns_in_companion_clock,
-            )
-        )
+                )
         #create folder in recording_id folder
-        os.mkdir(recordings_folder + recording_id)
-        dictionary = { "system_start_time": recording_start_time, "offset": clock_offset_ns}
+        os.mkdir(recordings_folder + self.recording_id)
+        dictionary = { "system_start_time": pc_recording_start_time, "offset": clock_offset_ns}
         json_object = json.dumps(dictionary, indent = 4)
-        with open (recordings_folder + recording_id + '/start_time_and_offset.json', 'w') as f:
+        with open (recordings_folder + self.recording_id + '/local_synchronisation.json', 'a') as f:
             f.write(json_object)
 
 acquisition_logic = AcquisitionLogic()

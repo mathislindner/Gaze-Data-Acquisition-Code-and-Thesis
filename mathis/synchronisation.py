@@ -3,6 +3,7 @@
 #Need to find a way to synchronize the 2 eye cameras to eachother.
 #import pandas as pd
 import numpy as np
+import pandas as pd
 from constants import camera_names, camera_folders, recordings_folder
 import os 
 import json
@@ -10,16 +11,6 @@ import json
 def decode_timestamp(timestamp_path):
     ts = np.fromfile(timestamp_path, dtype=np.uint64)
     return ts
-
-#count the number of frames in each camera
-def count_frames(recording_id):
-    recording_folder = recordings_folder + str(recording_id)
-    frame_counts = []
-    for i in range(len(camera_names)):
-        frames_folder = recording_folder + "/" + camera_folders[i]
-        frames = os.listdir(frames_folder)
-        frame_counts.append(len(frames))
-    return frame_counts
 
 def convert_camera_timestamps_to_system_time(camera_name, recording_id):
     recording_folder = recordings_folder + str(recording_id)
@@ -31,10 +22,10 @@ def convert_camera_timestamps_to_system_time(camera_name, recording_id):
 #https://docs.pupil-labs.com/developer/core/overview/#convert-pupil-time-to-system-time
 def convert_timestamps_to_system_time(recording_id, timestamps):
     #get the start time of the recording
-    with open(recordings_folder + recording_id + '/start_time_and_offset.json', 'r') as f:
+    with open(recordings_folder + recording_id + '/local_synchronisation.json', 'r') as f:
         # Reading from json file
         recording_info = json.load(f)
-    start_time_system = recording_info['start_time_system']
+    start_time_system = recording_info['system_start_time']
     #FIXME: this assumes that the recording started at the same time than the camera started recording
     first_timestamp = timestamps[0]
     #calculate the offset
@@ -43,15 +34,45 @@ def convert_timestamps_to_system_time(recording_id, timestamps):
     time_stamps_in_system_time = timestamps + offset #add the offset to each timestamp
     return time_stamps_in_system_time
 
-left_timestamps = decode_timestamp("mathis/recordings/902a976b-1f3b-4a2c-b6e4-f40a7aefbb47/PI left v1 ps1.time")
-right_timestamps = decode_timestamp("mathis/recordings/902a976b-1f3b-4a2c-b6e4-f40a7aefbb47/PI right v1 ps1.time")
-world_timestamps = decode_timestamp("mathis/recordings/902a976b-1f3b-4a2c-b6e4-f40a7aefbb47/PI world v1 ps1.time")
+#create a csv file that pairs the gaze timestamps with the world camera, left camera and right eye camera frames.
+def correspond_cameras_and_gaze(recording_id):
+    recording_folder = recordings_folder + recording_id + "/"
+    gaze_df = pd.read_csv(recording_folder + "/gaze.csv")
+    events_df = pd.read_csv(recording_folder + "/events.csv")
+    left_timestamps = decode_timestamp(recording_folder + "PI left v1 ps1.time")
+    right_timestamps = decode_timestamp(recording_folder + "PI right v1 ps1.time")
+    world_timestamps = decode_timestamp(recording_folder + "PI world v1 ps1.time")
 
-#check if the number of frames in each camera is the same
-frame_counts = count_frames("902a976b-1f3b-4a2c-b6e4-f40a7aefbb47")
+    #convert the timestamps to system time
+    gaze_df['system_timestamp [ns]'] = convert_timestamps_to_system_time(recording_id, gaze_df['timestamp [ns]'])
+    events_df['system_timestamp [ns]'] = convert_timestamps_to_system_time(recording_id, events_df['timestamp [ns]']) #TODO: make use of
+    left_timestamps = convert_timestamps_to_system_time(recording_id, left_timestamps)
+    right_timestamps = convert_timestamps_to_system_time(recording_id, right_timestamps)
+    world_timestamps = convert_timestamps_to_system_time(recording_id, world_timestamps)
 
-frame_counts = np.array(frame_counts) - [left_timestamps.shape[0], right_timestamps.shape[0], world_timestamps.shape[0]]
-#only the world camera matches, the other have max 6 frames difference, which means 6/200 of a second
-print(frame_counts)
+    #find the closest timestamp in the left and right eye cameras to the gaze timestamps
+    left_eye_frames = []
+    right_eye_frames = []
+    world_frames = []
+    for gaze_timestamp in gaze_df['system_timestamp [ns]']:
+        left_eye_frame = find_closest_frame_to_timestamp(gaze_timestamp, left_timestamps)
+        right_eye_frame = find_closest_frame_to_timestamp(gaze_timestamp, right_timestamps)
+        world_frame = find_closest_frame_to_timestamp(gaze_timestamp, world_timestamps)
+        left_eye_frames.append(left_eye_frame)
+        right_eye_frames.append(right_eye_frame)
+        world_frames.append(world_frame)
+
+    #create a new dataframe with the gaze timestamps and the corresponding frames in the left and right eye cameras
+    gaze_df['left_eye_frame'] = left_eye_frames
+    gaze_df['right_eye_frame'] = right_eye_frames
+    gaze_df['world_frame'] = world_frames
+    gaze_df.to_csv(recording_folder + "/gaze_with_frames.csv")
+
+#FIXME: OPTIMIZE THIS
+def find_closest_frame_to_timestamp(gaze_timestamp, camera_timestamps):
+    closest_timestamp = min(camera_timestamps, key=lambda x:abs(x-gaze_timestamp)) #TODO: argmin??
+    closest_frame = np.where(camera_timestamps == closest_timestamp)[0][0]
+    return closest_frame
 
 
+correspond_cameras_and_gaze("be0f413f-0bdd-4053-a1d4-c03efd57e532")

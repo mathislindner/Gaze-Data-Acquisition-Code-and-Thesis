@@ -1,6 +1,6 @@
 import os
 import pandas as pd
-from synchronisation import convert_timestamps_to_system_time
+from synchronisation import correspond_cameras_and_gaze
 from pupilcloud import Api, ApiException
 from constants import *
 import requests
@@ -49,25 +49,13 @@ class  recordingDownloader:
 class recordingCurator:
     def __init__(self, recording_id):
         self.recording_id = recording_id
+        self.recording_folder = recordings_folder + '/' + str(self.recording_id)
         print("Curating recording:" + str(self.recording_id))
 
-    #TODO: implement
+ 
     def curate_recording(self):
         #TODO: remove unecessary files
         #extract frames
         extract_frames(self.recording_id)
-        gaze_df = pd.read_csv(self.recording_folder + "/gaze.csv")
-        events_df = pd.read_csv(self.recording_folder + "/events.csv")
-        blinks_df = pd.read_csv(self.recording_folder + "/blinks.csv")
-
-        #TODO: use this function: convert_timestamps_to_system_time
-        #convert gaze_df timestamps to system_time_stamps
-        #convert events_df timestamps to system_time_stamps
-        #convert blinks_df timestamps to system_time_stamps
-        #convert all 3 camera timestamps to system_time_stamps
-        #make a big df with all of them together, matching them to the closest timestamps 
-
-
-        #find the matching frames from each camera and add them to the gaze_df as columns 
-        #remove blinks thanks to file
+        correspond_cameras_and_gaze(self.recording_id)
         pass

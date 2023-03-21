@@ -11,8 +11,9 @@ api = Api(api_key="K2xko4e9Vt9VXTuThUngAG2yKTW2ZRcenhEFe9K4tiSA", host="https://
 recordings_folder = "mathis/recordings/"
 
 # Returns a list of recordings
+#FIXME do not include unprocessed recordings (or do a try except in the download function)
 def get_recordings():
-    recordings = api.get_recordings().result #probs have to extract id's
+    recordings = api.get_recordings().result 
     recording_ids = [recording.id for recording in recordings]
     return recording_ids
 
