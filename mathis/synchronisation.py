@@ -39,13 +39,13 @@ def correspond_cameras_and_gaze(recording_id):
     recording_folder = recordings_folder + recording_id + "/"
     gaze_df = pd.read_csv(recording_folder + "/gaze.csv")
     events_df = pd.read_csv(recording_folder + "/events.csv")
-    left_timestamps = decode_timestamp(recording_folder + "PI left v1 ps1.time")
-    right_timestamps = decode_timestamp(recording_folder + "PI right v1 ps1.time")
-    world_timestamps = decode_timestamp(recording_folder + "PI world v1 ps1.time")
+    left_timestamps = decode_timestamp(recording_folder + camera_names[0] + ".time")
+    right_timestamps = decode_timestamp(recording_folder + camera_names[1] + ".time")
+    world_timestamps = decode_timestamp(recording_folder + camera_names[2] + ".time")
 
     #convert the timestamps to system time
     gaze_df['system_timestamp [ns]'] = convert_timestamps_to_system_time(recording_id, gaze_df['timestamp [ns]'])
-    events_df['system_timestamp [ns]'] = convert_timestamps_to_system_time(recording_id, events_df['timestamp [ns]']) #TODO: make use of
+    events_df['system_timestamp [ns]'] = convert_timestamps_to_system_time(recording_id, events_df['timestamp [ns]']) 
     left_timestamps = convert_timestamps_to_system_time(recording_id, left_timestamps)
     right_timestamps = convert_timestamps_to_system_time(recording_id, right_timestamps)
     world_timestamps = convert_timestamps_to_system_time(recording_id, world_timestamps)
@@ -54,13 +54,16 @@ def correspond_cameras_and_gaze(recording_id):
     left_eye_frames = []
     right_eye_frames = []
     world_frames = []
+    events_frames = []
     for gaze_timestamp in gaze_df['system_timestamp [ns]']:
         left_eye_frame = find_closest_frame_to_timestamp(gaze_timestamp, left_timestamps)
         right_eye_frame = find_closest_frame_to_timestamp(gaze_timestamp, right_timestamps)
         world_frame = find_closest_frame_to_timestamp(gaze_timestamp, world_timestamps)
+        events_frame = find_closest_frame_to_timestamp(gaze_timestamp, events_df['system_timestamp [ns]']) #TODO: test if it works
         left_eye_frames.append(left_eye_frame)
         right_eye_frames.append(right_eye_frame)
         world_frames.append(world_frame)
+        events_frames.append(events_frame)
 
     #create a new dataframe with the gaze timestamps and the corresponding frames in the left and right eye cameras
     gaze_df['left_eye_frame'] = left_eye_frames
@@ -68,11 +71,7 @@ def correspond_cameras_and_gaze(recording_id):
     gaze_df['world_frame'] = world_frames
     gaze_df.to_csv(recording_folder + "/gaze_with_frames.csv")
 
-#FIXME: OPTIMIZE THIS
 def find_closest_frame_to_timestamp(gaze_timestamp, camera_timestamps):
-    closest_timestamp = min(camera_timestamps, key=lambda x:abs(x-gaze_timestamp)) #TODO: argmin??
-    closest_frame = np.where(camera_timestamps == closest_timestamp)[0][0]
-    return closest_frame
+    return np.searchsorted(camera_timestamps, gaze_timestamp, side="left")
 
-
-correspond_cameras_and_gaze("be0f413f-0bdd-4053-a1d4-c03efd57e532")
+#correspond_cameras_and_gaze("be0f413f-0bdd-4053-a1d4-c03efd57e532")
