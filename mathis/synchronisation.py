@@ -4,8 +4,7 @@
 #import pandas as pd
 import numpy as np
 import pandas as pd
-from constants import camera_names, camera_folders, recordings_folder
-import os 
+from constants import *
 import json
 
 def decode_timestamp(timestamp_path):
@@ -50,6 +49,7 @@ def correspond_cameras_and_gaze(recording_id):
     right_timestamps = convert_timestamps_to_system_time(recording_id, right_timestamps)
     world_timestamps = convert_timestamps_to_system_time(recording_id, world_timestamps)
 
+    #TODO:convert to numpy array to make implementation faster
     #find the closest timestamp in the left and right eye cameras to the gaze timestamps
     left_eye_frames = []
     right_eye_frames = []
@@ -69,9 +69,10 @@ def correspond_cameras_and_gaze(recording_id):
     gaze_df['left_eye_frame'] = left_eye_frames
     gaze_df['right_eye_frame'] = right_eye_frames
     gaze_df['world_frame'] = world_frames
-    gaze_df.to_csv(recording_folder + "/gaze_with_frames.csv")
+    gaze_df['events_frame'] = events_frames
+    gaze_df.to_csv(recording_folder + "/gaze_with_frames_and_events.csv")
 
 def find_closest_frame_to_timestamp(gaze_timestamp, camera_timestamps):
     return np.searchsorted(camera_timestamps, gaze_timestamp, side="left")
 
-#correspond_cameras_and_gaze("be0f413f-0bdd-4053-a1d4-c03efd57e532")
+#correspond_cameras_and_gaze("9480f94c-6052-4d26-86b7-f2383bf34de3")

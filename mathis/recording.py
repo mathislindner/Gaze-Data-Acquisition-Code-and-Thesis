@@ -98,7 +98,6 @@ class AcquisitionLogic:
 
     #https://pupil-labs-realtime-api.readthedocs.io/en/latest/examples/simple.html#send-event
     def save_offset_and_start_time(self, pc_recording_start_time):
-        #TODO: we can also use sections.csv that tells us whe the recording started and ended in companion clock.
         estimate = device.estimate_time_offset()
 
         clock_offset_ns = round(estimate.time_offset_ms.mean * 1_000_000)

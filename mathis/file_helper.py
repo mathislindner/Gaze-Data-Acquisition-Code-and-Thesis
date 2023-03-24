@@ -15,9 +15,24 @@ def unzip_and_move_to_parent(response, parent_folder):
         move(os.path.join(parent_folder, subfolder_name, filename), os.path.join(parent_folder, filename))
     os.rmdir(os.path.join(parent_folder, subfolder_name))
 
+#TODO: this 
+def extract_one_camera_2(input_file, output_folder, timestamps):
+    #convert nanoseconds timestamps to seconds
+    timestamps = timestamps / 1000000000
+    #extract 100 frames at a time until all frames are extracted
+    nb_of_frames = len(timestamps)
+    nb_of_frames_per_batch = 100
+    nb_of_batches = nb_of_frames // nb_of_frames_per_batch
+    #use the ffmpeg python wrapper to extract frames
+    for i in range(nb_of_batches):
+        (
+            ffmpeg
+            .input(input_file, ss=timestamps[i * nb_of_frames_per_batch], t=timestamps[(i+1) * nb_of_frames_per_batch])
+        ).output(output_folder + "/" + "%d.png", start_number=i * nb_of_frames_per_batch, vframes=nb_of_frames_per_batch, vsync = 2, loglevel="quiet").run()
+        
+    
+
 def extract_one_camera(input_file, output_folder, n_of_frames):
-    #TODO: either use ffmpeg to probe or assume that the .time file is correct
-    #n_of_frames = ffmpeg.probe(input_file)['streams'][0]['nb_frames']
     print(input_file)
     (
         ffmpeg
@@ -28,12 +43,24 @@ def decode_timestamp(timestamp_path):
     ts = np.fromfile(timestamp_path, dtype=np.uint64)
     return ts
 
+#FIXME use the .time files to extract exactly at the right time the frames, jsut the number of.
 def extract_frames(recording_id):
     recording_folder = recordings_folder + str(recording_id)
 
-    nb_of_timestamps_left = len(decode_timestamp(recording_folder + "/PI left v1 ps1.time"))
-    nb_of_timestamps_right = len(decode_timestamp(recording_folder + "/PI right v1 ps1.time"))
-    nb_of_timestamps_world = len(decode_timestamp(recording_folder + "/PI world v1 ps1.time"))
+    #TODO:make this nicer
+    timestamps_left = decode_timestamp(recording_folder + "/PI left v1 ps1.time")
+    timestamps_right = decode_timestamp(recording_folder + "/PI right v1 ps1.time")
+    timestamps_world = decode_timestamp(recording_folder + "/PI world v1 ps1.time")
+    timestamps_left = timestamps_left - timestamps_left[0]
+    timestamps_right = timestamps_right - timestamps_right[0]
+    timestamps_world = timestamps_world - timestamps_world[0]
+
+    timestamps = [timestamps_left, timestamps_right, timestamps_world]
+    
+    nb_of_timestamps_left = len(timestamps_left)
+    nb_of_timestamps_right = len(timestamps_right)
+    nb_of_timestamps_world = len(timestamps_world)
+
     nb_of_timestamps = [nb_of_timestamps_left, nb_of_timestamps_right, nb_of_timestamps_world]
 
     try:
@@ -46,4 +73,8 @@ def extract_frames(recording_id):
     for i in range(len(camera_names)):
         input_file = recording_folder + "/" + camera_names[i] + ".mp4"
         output_folder = recording_folder + "/" + camera_folders[i]
-        extract_one_camera(input_file, output_folder, nb_of_timestamps[i])
+        #extract_one_camera(input_file, output_folder, nb_of_timestamps[i])
+        print(input_file)
+        extract_one_camera_2(input_file, output_folder, timestamps[i])
+
+#extract_frames('9480f94c-6052-4d26-86b7-f2383bf34de3')
