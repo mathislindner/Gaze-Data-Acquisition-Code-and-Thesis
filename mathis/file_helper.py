@@ -16,7 +16,7 @@ def unzip_and_move_to_parent(response, parent_folder):
     os.rmdir(os.path.join(parent_folder, subfolder_name))
 
 #TODO: this 
-def extract_one_camera_2(input_file, output_folder, timestamps):
+def extract_one_camera_using_timestamps(input_file, output_folder, timestamps):
     #convert nanoseconds timestamps to seconds
     timestamps = timestamps / 1000000000
     #extract 100 frames at a time until all frames are extracted
@@ -33,6 +33,7 @@ def extract_one_camera_2(input_file, output_folder, timestamps):
     
 
 def extract_one_camera(input_file, output_folder, n_of_frames):
+    n_of_frames = ffmpeg.probe(input_file)['streams'][0]['nb_frames'] 
     print(input_file)
     (
         ffmpeg
@@ -74,7 +75,6 @@ def extract_frames(recording_id):
         input_file = recording_folder + "/" + camera_names[i] + ".mp4"
         output_folder = recording_folder + "/" + camera_folders[i]
         #extract_one_camera(input_file, output_folder, nb_of_timestamps[i])
-        print(input_file)
-        extract_one_camera_2(input_file, output_folder, timestamps[i])
+        extract_one_camera_using_timestamps(input_file, output_folder, timestamps[i])
 
 #extract_frames('9480f94c-6052-4d26-86b7-f2383bf34de3')

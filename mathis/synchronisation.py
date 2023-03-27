@@ -36,8 +36,8 @@ def convert_timestamps_to_system_time(recording_id, timestamps):
 #create a csv file that pairs the gaze timestamps with the world camera, left camera and right eye camera frames.
 def correspond_cameras_and_gaze(recording_id):
     recording_folder = recordings_folder + recording_id + "/"
-    gaze_df = pd.read_csv(recording_folder + "/gaze.csv")
-    events_df = pd.read_csv(recording_folder + "/events.csv")
+    gaze_df = pd.read_csv(recording_folder + "gaze.csv")
+    events_df = pd.read_csv(recording_folder + "events.csv")
     left_timestamps = decode_timestamp(recording_folder + camera_names[0] + ".time")
     right_timestamps = decode_timestamp(recording_folder + camera_names[1] + ".time")
     world_timestamps = decode_timestamp(recording_folder + camera_names[2] + ".time")
@@ -45,9 +45,11 @@ def correspond_cameras_and_gaze(recording_id):
     #convert the timestamps to system time
     gaze_df['system_timestamp [ns]'] = convert_timestamps_to_system_time(recording_id, gaze_df['timestamp [ns]'])
     events_df['system_timestamp [ns]'] = convert_timestamps_to_system_time(recording_id, events_df['timestamp [ns]']) 
+
     left_timestamps = convert_timestamps_to_system_time(recording_id, left_timestamps)
     right_timestamps = convert_timestamps_to_system_time(recording_id, right_timestamps)
     world_timestamps = convert_timestamps_to_system_time(recording_id, world_timestamps)
+
 
     #TODO:convert to numpy array to make implementation faster
     #find the closest timestamp in the left and right eye cameras to the gaze timestamps
@@ -75,4 +77,22 @@ def correspond_cameras_and_gaze(recording_id):
 def find_closest_frame_to_timestamp(gaze_timestamp, camera_timestamps):
     return np.searchsorted(camera_timestamps, gaze_timestamp, side="left")
 
-#correspond_cameras_and_gaze("9480f94c-6052-4d26-86b7-f2383bf34de3")
+#TODO:
+#from android log file get the start time of the recording and corespong it to the start time of the camera
+#use the first timestamp of the camera to calculate the offset
+#returns a dictionary with the true first frame start time of the recording and the start time of the camera
+def get_first_frame_time(recording_id):
+    recording_foler = recordings_folder + recording_id
+    file_name = recording_foler + "/android.zip/android_log.txt"
+    start_times  ={}
+    with open (file_name, "r") as myfile:
+        data=myfile.readlines()
+    #get the start time of the recording
+    for line in data:
+        if "Recording started" in line:
+            recording_start_time = line.split(" ")[0]
+            start_times['recording_start_time'] = recording_start_time
+    pass
+
+correspond_cameras_and_gaze("82e52db9-1cac-495d-99dd-bebb51c393a0")
+

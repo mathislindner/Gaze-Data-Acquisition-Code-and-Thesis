@@ -19,16 +19,16 @@ class  recordingDownloader:
         self.api = api
     # process recording by id
     def download_recording_and_events(self):
+        #check if recording already downloaded
+        if os.path.exists(self.recording_folder +"/"+ camera_names[0] + ".mp4"):
+            print("Recording already downloaded")
+            return
         #TODO: check if recording has been processed in the pupil cloud
         self.download_videos()
         self.download_timeseries()
 
     #download and extract recording by id  
     def download_videos(self):
-        #check if recording already downloaded
-        if os.path.exists(self.recording_folder +"/"+ camera_names[0] + ".mp4"):
-            print("Recording already downloaded")
-            return
         # Download recording files as a zip file in memory
         try:
             response = self.api.download_recording_zip(self.recording_id, _preload_content=False)
@@ -55,6 +55,10 @@ class recordingCurator:
  
     def curate_recording(self):
         #TODO: remove unecessary files
+        #if path exists, don t curate
+        if os.path.exists(self.recording_folder + "/left_eye_frames"):
+            print("Recording already curated")
+            return
         #extract frames
         extract_frames(self.recording_id)
         correspond_cameras_and_gaze(self.recording_id)
