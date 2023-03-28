@@ -43,7 +43,7 @@ def extract_one_camera_using_timestamps(input_file, output_folder, timestamps):
         ).output(output_folder + "/" + "%d.png", start_number=i * nb_of_frames_per_batch, vframes=nb_of_frames_per_batch, vsync = 2, loglevel="quiet").run()
         
     
-
+#TODO:remove this when the other one works
 def extract_one_camera(input_file, output_folder, n_of_frames):
     n_of_frames = ffmpeg.probe(input_file)['streams'][0]['nb_frames'] 
     print(input_file)
