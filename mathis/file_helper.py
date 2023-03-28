@@ -24,8 +24,6 @@ def extract_one_camera_using_timestamps(input_file, output_folder, timestamps):
     nb_of_frames_per_batch = 100
     nb_of_batches = nb_of_frames // nb_of_frames_per_batch
     #use the ffmpeg python wrapper to extract frames
-    print(input_file)
-    print(output_folder)
     for i in range(nb_of_batches):
         (
             ffmpeg

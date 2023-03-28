@@ -34,7 +34,6 @@ def curate_all_recordings_multiprocessing():
     recordings = os.listdir(recordings_folder)
     print(recordings_folder)
     to_curate = []
-    print(to_curate)
     #for each folder check if curated
     for recording in recordings:
         if not os.path.exists(recordings_folder + recording + "/left_eye_frames/0.png"): #TODO: make this prettiermaybe? or create metadata file that says if curated or not
@@ -49,6 +48,6 @@ def curate_recording(recording_id):
 #print current directory
 if __name__ == "__main__":
     #download_all_recordings_multiprocessing()
-    #curate_all_recordings_multiprocessing()
-    curate_recording(recording_id="82e52db9-1cac-495d-99dd-bebb51c393a0")
+    curate_all_recordings_multiprocessing()
+    #curate_recording(recording_id="be0f413f-0bdd-4053-a1d4-c03efd57e532")
 
