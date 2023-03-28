@@ -82,17 +82,18 @@ def find_closest_frame_to_timestamp(gaze_timestamp, camera_timestamps):
 #use the first timestamp of the camera to calculate the offset
 #returns a dictionary with the true first frame start time of the recording and the start time of the camera
 def get_first_frame_time(recording_id):
-    recording_foler = recordings_folder + recording_id
-    file_name = recording_foler + "/android.zip/android_log.txt"
+    recording_foler = 'recordings/' + recording_id
+    zipped_name = recording_foler + "/android.log.zip"
     start_times  ={}
-    with open (file_name, "r") as myfile:
-        data=myfile.readlines()
+    with zipfile.ZipFile(zipped_name) as zipped_folder:
+        data = zipped_folder.read('android.log').decode('utf-8').splitlines()
     #get the start time of the recording
-    for line in data:
+    for line in data[:50]:
+        print(line)
         if "Recording started" in line:
             recording_start_time = line.split(" ")[0]
             start_times['recording_start_time'] = recording_start_time
-    pass
+    return start_times
 
-correspond_cameras_and_gaze("82e52db9-1cac-495d-99dd-bebb51c393a0")
+#correspond_cameras_and_gaze("82e52db9-1cac-495d-99dd-bebb51c393a0")
 
