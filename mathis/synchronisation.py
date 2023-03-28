@@ -6,6 +6,8 @@ import numpy as np
 import pandas as pd
 from constants import *
 import json
+import zipfile
+import datetime
 
 def decode_timestamp(timestamp_path):
     ts = np.fromfile(timestamp_path, dtype=np.uint64)
@@ -42,6 +44,7 @@ def correspond_cameras_and_gaze(recording_id):
     right_timestamps = decode_timestamp(recording_folder + camera_names[1] + ".time")
     world_timestamps = decode_timestamp(recording_folder + camera_names[2] + ".time")
 
+    print("original left timestamps: " + str(left_timestamps[0]))
     #convert the timestamps to system time
     gaze_df['system_timestamp [ns]'] = convert_timestamps_to_system_time(recording_id, gaze_df['timestamp [ns]'])
     events_df['system_timestamp [ns]'] = convert_timestamps_to_system_time(recording_id, events_df['timestamp [ns]']) 
@@ -49,6 +52,23 @@ def correspond_cameras_and_gaze(recording_id):
     left_timestamps = convert_timestamps_to_system_time(recording_id, left_timestamps)
     right_timestamps = convert_timestamps_to_system_time(recording_id, right_timestamps)
     world_timestamps = convert_timestamps_to_system_time(recording_id, world_timestamps)
+
+    print("left timestamps in system time: " + str(left_timestamps[0]))
+          
+    #FIXME: add offset found in log to the timestamps (right eye will be the reference)
+    phone_start_times = get_first_frame_time(recording_id)
+
+    reference_camera = camera_names[1]
+    left_offset_to_reference = phone_start_times[reference_camera+ "_recording_start_time"] - phone_start_times[camera_names[0] + "_recording_start_time"]
+    right_offset_to_reference = phone_start_times[reference_camera + "_recording_start_time"] - phone_start_times[camera_names[1] + "_recording_start_time"]
+    world_offset_to_reference = phone_start_times[reference_camera + "_recording_start_time"] - phone_start_times[camera_names[2] + "_recording_start_time"]
+
+    left_timestamps = left_timestamps - left_offset_to_reference
+    right_timestamps = right_timestamps - right_offset_to_reference
+    world_timestamps = world_timestamps - world_offset_to_reference
+
+    print("left offset to reference: " + str(left_offset_to_reference))
+    print(left_timestamps[0])
 
 
     #TODO:convert to numpy array to make implementation faster
@@ -82,10 +102,11 @@ def find_closest_frame_to_timestamp(gaze_timestamp, camera_timestamps):
 #use the first timestamp of the camera to calculate the offset
 #returns a dictionary with the true first frame start time of the recording and the start time of the camera
 def get_first_frame_time(recording_id):
-    recording_foler = 'recordings/' + recording_id
+    recording_foler = recordings_folder + recording_id
     zipped_name = recording_foler + "/android.log.zip"
     start_times  ={}
-    current_year = datetime.now().year
+    current_year = datetime.date.today().year
+
     with zipfile.ZipFile(zipped_name) as zipped_folder:
         data = zipped_folder.read('android.log').decode('utf-8').splitlines()
     #get the start time of the recording
@@ -99,8 +120,9 @@ def get_first_frame_time(recording_id):
                 recording_timestamp = recording_date + " " + recording_start_time
                 print(recording_timestamp)
                 #convert time to nanoseconds from "%m-%d-%Y %H:%M:%S.%f"
-                start_times['{} recording_start_time'.format(camera_name)] = int(datetime.strptime(recording_timestamp, "%m-%d-%Y %H:%M:%S.%f").timestamp() * 1e9)
+                start_times['{}_recording_start_time'.format(camera_name)] = int(datetime.datetime.strptime(recording_timestamp, "%m-%d-%Y %H:%M:%S.%f").timestamp() * 10e8)
+
     return start_times
 
-#correspond_cameras_and_gaze("82e52db9-1cac-495d-99dd-bebb51c393a0")
+correspond_cameras_and_gaze("82e52db9-1cac-495d-99dd-bebb51c393a0")
 

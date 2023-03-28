@@ -12,6 +12,8 @@ host = socket.gethostname()
 if username == 'nipopovic' and host == 'archer':
     recordings_folder = "/home/nipopovic/MountedDirs/aegis_cvl/aegis_cvl_root/data/data_collection/nikola_debug/"
 elif username == 'Mathis':
-    recordings_folder = "C:/Users/Mathis/Documents/GitHub/gaze_data_acquisition/mathis/recordings"
+    recordings_folder = "C:/Users/Mathis/Documents/GitHub/gaze_data_acquisition/mathis/recordings/"
+elif username == 'mathi':
+    recordings_folder = "C:/Users/mathi/Documents/GitHub/gaze_data_acquisition/mathis/recordings/"
 else:
     raise AssertionError
