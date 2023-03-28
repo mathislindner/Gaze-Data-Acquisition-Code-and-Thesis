@@ -49,14 +49,14 @@ class  recordingDownloader:
 class recordingCurator:
     def __init__(self, recording_id):
         self.recording_id = recording_id
-        self.recording_folder = recordings_folder + '/' + str(self.recording_id)
+        self.recording_folder = os.path.join(recordings_folder,str(self.recording_id))
         print("Curating recording:" + str(self.recording_id))
 
  
     def curate_recording(self):
         #TODO: remove unecessary files
         #if path exists, don t curate
-        if os.path.exists(self.recording_folder + "/left_eye_frames"):
+        if os.path.exists(self.recording_folder + "/left_eye_frames/0.png"):
             print("Recording already curated")
             return
         #extract frames

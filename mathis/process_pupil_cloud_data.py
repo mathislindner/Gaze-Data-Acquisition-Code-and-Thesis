@@ -3,12 +3,12 @@
 
 from pupilcloud import Api, ApiException
 from recording_ingestor import recordingDownloader, recordingCurator
+from constants import *
 import os
 import multiprocessing
 
 #API object for all the requests, #FIXME: put in a config file, and create api object in the recording ingestor
 api = Api(api_key="K2xko4e9Vt9VXTuThUngAG2yKTW2ZRcenhEFe9K4tiSA", host="https://api.cloud.pupil-labs.com", downloads_path="mathis/recordings")
-recordings_folder = "mathis/recordings/"
 
 # Returns a list of recordings
 #FIXME do not include unprocessed recordings (or do a try except in the download function)
@@ -30,11 +30,14 @@ def download_recording(recording_id):
 
 def curate_all_recordings_multiprocessing():
     # list all folders in recordings folder
+    #python_file_dir = os.path.dirname(os.path.abspath(__file__))
     recordings = os.listdir(recordings_folder)
+    print(recordings_folder)
     to_curate = []
+    print(to_curate)
     #for each folder check if curated
     for recording in recordings:
-        if not os.path.exists(recordings_folder + recording + "/left_eye_frames"): #TODO: make this prettiermaybe? or create metadata file that says if curated or not
+        if not os.path.exists(recordings_folder + recording + "/left_eye_frames/0.png"): #TODO: make this prettiermaybe? or create metadata file that says if curated or not
             to_curate.append(recording)
     pool = multiprocessing.Pool(processes=4)
     pool.map(curate_recording, to_curate)
@@ -43,7 +46,9 @@ def curate_recording(recording_id):
     recording_curator = recordingCurator(recording_id)
     recording_curator.curate_recording()
 
-
+#print current directory
 if __name__ == "__main__":
-    download_all_recordings_multiprocessing()
-    curate_all_recordings_multiprocessing()
+    #download_all_recordings_multiprocessing()
+    #curate_all_recordings_multiprocessing()
+    curate_recording(recording_id="82e52db9-1cac-495d-99dd-bebb51c393a0")
+

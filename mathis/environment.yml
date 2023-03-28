@@ -1,5 +1,6 @@
 name: gazeacq
 channels:
+  - menpo
   - anaconda
   - conda-forge
   - plotly
@@ -25,6 +26,7 @@ dependencies:
   - debugpy=1.5.1=py38hd77b12b_0
   - decorator=5.1.1=pyhd3eb1b0_0
   - executing=1.2.0=pyhd8ed1ab_0
+  - ffmpeg=2.7.0=0
   - fonttools=4.25.0=pyhd3eb1b0_0
   - freetype=2.12.1=ha860e81_0
   - giflib=5.2.1=h8cc25b3_3
@@ -128,7 +130,6 @@ dependencies:
   - zlib=1.2.13=h8cc25b3_0
   - zstd=1.5.2=h19a0ad4_0
   - pip:
-    - ffmpeg==1.4
     - ffmpeg-python==0.2.0
     - future==0.18.3
     - pupilcloud==1.0.1

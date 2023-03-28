@@ -24,6 +24,8 @@ def extract_one_camera_using_timestamps(input_file, output_folder, timestamps):
     nb_of_frames_per_batch = 100
     nb_of_batches = nb_of_frames // nb_of_frames_per_batch
     #use the ffmpeg python wrapper to extract frames
+    print(input_file)
+    print(output_folder)
     for i in range(nb_of_batches):
         (
             ffmpeg
@@ -46,8 +48,8 @@ def decode_timestamp(timestamp_path):
 
 #FIXME use the .time files to extract exactly at the right time the frames, jsut the number of.
 def extract_frames(recording_id):
-    recording_folder = recordings_folder + str(recording_id)
-
+    recording_folder = os.path.join(recordings_folder, str(recording_id))
+    
     #TODO:make this nicer
     timestamps_left = decode_timestamp(recording_folder + "/PI left v1 ps1.time")
     timestamps_right = decode_timestamp(recording_folder + "/PI right v1 ps1.time")
@@ -55,7 +57,6 @@ def extract_frames(recording_id):
     timestamps_left = timestamps_left - timestamps_left[0]
     timestamps_right = timestamps_right - timestamps_right[0]
     timestamps_world = timestamps_world - timestamps_world[0]
-
     timestamps = [timestamps_left, timestamps_right, timestamps_world]
     
     nb_of_timestamps_left = len(timestamps_left)
@@ -65,15 +66,14 @@ def extract_frames(recording_id):
     nb_of_timestamps = [nb_of_timestamps_left, nb_of_timestamps_right, nb_of_timestamps_world]
 
     try:
-        os.mkdir(recording_folder + "/left_eye_frames")
-        os.mkdir(recording_folder + "/right_eye_frames")
-        os.mkdir(recording_folder + "/world_frames")
+        for folder in camera_folders:
+            os.mkdir(recording_folder + "/" + folder)
     except:
         pass
 
     for i in range(len(camera_names)):
-        input_file = recording_folder + "/" + camera_names[i] + ".mp4"
-        output_folder = recording_folder + "/" + camera_folders[i]
+        input_file = os.path.join(recording_folder + '/' +  camera_names[i] + ".mp4")
+        output_folder = os.path.join(recording_folder +'/'+ camera_folders[i])
         #extract_one_camera(input_file, output_folder, nb_of_timestamps[i])
         extract_one_camera_using_timestamps(input_file, output_folder, timestamps[i])
 
