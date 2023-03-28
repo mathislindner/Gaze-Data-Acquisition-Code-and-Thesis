@@ -6,6 +6,18 @@ import ffmpeg
 from constants import *
 import numpy as np
 
+
+def unzip_and_move_to_parent(response, parent_folder):
+    z = zipfile.ZipFile(io.BytesIO(response))
+    z.extractall(parent_folder)
+    #subfolder_name = os.listdir(parent_folder + "/")[0]
+    subfolder_name = z.filelist[0].filename.split(os.sep)[0]
+    #move all files to parent folder and delete folder
+    for filename in os.listdir(os.path.join(parent_folder, subfolder_name)):
+        move(os.path.join(parent_folder, subfolder_name, filename), os.path.join(parent_folder, filename))
+    os.rmdir(os.path.join(parent_folder, subfolder_name))
+
+"""
 def unzip_and_move_to_parent(response, parent_folder):
     z = zipfile.ZipFile(io.BytesIO(response))
     z.extractall(parent_folder)
@@ -14,7 +26,7 @@ def unzip_and_move_to_parent(response, parent_folder):
     for filename in os.listdir(os.path.join(parent_folder, subfolder_name)):
         move(os.path.join(parent_folder, subfolder_name, filename), os.path.join(parent_folder, filename))
     os.rmdir(os.path.join(parent_folder, subfolder_name))
-
+"""
 #TODO: this 
 def extract_one_camera_using_timestamps(input_file, output_folder, timestamps):
     #convert nanoseconds timestamps to seconds
