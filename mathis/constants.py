@@ -1,7 +1,17 @@
 #include API key, recordings folder, camera names...
+import getpass
+import socket
+
+#include API key, recordings folder, camera names...
 camera_names = ["PI left v1 ps1", "PI right v1 ps1", "PI world v1 ps1"]
 camera_folders = ["left_eye_frames", "right_eye_frames", "world_frames"]
-recordings_folder = "C:/Users/Mathis/Documents/GitHub/gaze_data_acquisition/mathis/recordings/" #TODO: change to your own path
 workspace_id = "9ae5e987-5235-486f-8552-427014bbedcd"
-#add all ncessary files
-files_to_delete = ['android.log.zip', 'enrichment_info.txt', 'event.txt']
+
+username = getpass.getuser()
+host = socket.gethostname()
+if username == 'nipopovic' and host == 'archer':
+    recordings_folder = "/home/nipopovic/MountedDirs/aegis_cvl/aegis_cvl_root/data/data_collection/nikola_debug/"
+elif username == 'Mathis':
+    recordings_folder = "C:/Users/Mathis/Documents/GitHub/gaze_data_acquisition/mathis/recordings"
+else:
+    raise AssertionError
