@@ -85,14 +85,21 @@ def get_first_frame_time(recording_id):
     recording_foler = 'recordings/' + recording_id
     zipped_name = recording_foler + "/android.log.zip"
     start_times  ={}
+    current_year = datetime.now().year
     with zipfile.ZipFile(zipped_name) as zipped_folder:
         data = zipped_folder.read('android.log').decode('utf-8').splitlines()
     #get the start time of the recording
-    for line in data[:50]:
-        print(line)
-        if "Recording started" in line:
-            recording_start_time = line.split(" ")[0]
-            start_times['recording_start_time'] = recording_start_time
+    for camera_name in camera_names:
+        
+        for line in data:
+            line_to_search = "MainActivity: updateDevice:actionType=1000, status=DeviceInfo({}/active)".format(camera_name[:-4])
+            if line_to_search in line:
+                recording_start_time = line.split(" ")[1]
+                recording_date = line.split(" ")[0] + "-" + str(current_year)
+                recording_timestamp = recording_date + " " + recording_start_time
+                print(recording_timestamp)
+                #convert time to nanoseconds from "%m-%d-%Y %H:%M:%S.%f"
+                start_times['{} recording_start_time'.format(camera_name)] = int(datetime.strptime(recording_timestamp, "%m-%d-%Y %H:%M:%S.%f").timestamp() * 1e9)
     return start_times
 
 #correspond_cameras_and_gaze("82e52db9-1cac-495d-99dd-bebb51c393a0")
