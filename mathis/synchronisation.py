@@ -38,7 +38,6 @@ def convert_timestamps_to_system_time(recording_id, timestamps):
 
 #create a csv file that pairs the gaze timestamps with the world camera, left camera and right eye camera frames.
 #
-"""
 def correspond_cameras_and_gaze(recording_id):
     recording_folder = recordings_folder + recording_id + "/"
     gaze_df = pd.read_csv(recording_folder + "gaze.csv")
@@ -100,8 +99,9 @@ def correspond_cameras_and_gaze(recording_id):
     gaze_df['events_frame'] = events_frames
     gaze_df.to_csv(recording_folder + "/gaze_with_frames_and_events.csv")
 
-"""
 #####################################################################################################################################################
+#this works for left and right eye cameras, but somehow the timestamp of the world camera is completely off
+#TODO: either keep correspond_cameras_and_gaze() or correspond_cameras_and_gaze_2()
 def correspond_cameras_and_gaze_2(recording_id):
     recording_folder = recordings_folder + recording_id + "/"
 
@@ -111,32 +111,62 @@ def correspond_cameras_and_gaze_2(recording_id):
     left_timestamps = decode_timestamp(recording_folder + camera_names[0] + ".time")
     right_timestamps = decode_timestamp(recording_folder + camera_names[1] + ".time")
     world_timestamps = decode_timestamp(recording_folder + camera_names[2] + ".time")
-    gaze_timestamps = decode_timestamp(recording_folder + "gaze_200hz.time") #FIXME we don t need the .time file because it is the same as the gaze.csv file
+    #gaze_timestamps = decode_timestamp(recording_folder + "gaze_200hz.time") #FIXME we don t need the .time file because it is the same as the gaze.csv file
     events_timestamps = decode_timestamp(recording_folder + "event.time")
     # I am assuming that the first timestamp of of events is the timestamp of the event to synchronize the cameras
     phone_times = get_first_frame_time(recording_id=recording_id)
 
-    offset_left_to_events = phone_times[camera_names[0][:-4] + "_recording_start_time"] - phone_times["first_event_android_time"]
-    offset_right_to_events = phone_times[camera_names[1][:-4] + "_recording_start_time"] - phone_times["first_event_android_time"]
-    offset_world_to_events = phone_times[camera_names[2][:-4] + "_recording_start_time"] - phone_times["first_event_android_time"]
-    offset_gaze_to_events = phone_times["Gaze_recording_start_time"] - phone_times["first_event_android_time"]
+    #offset_left_to_events = phone_times[camera_names[0][:-4] + "_recording_start_time"] - phone_times["first_event_android_time"]
+    #offset_right_to_events = phone_times[camera_names[1][:-4] + "_recording_start_time"] - phone_times["first_event_android_time"]
+    #offset_world_to_events = phone_times[camera_names[2][:-4] + "_recording_start_time"] - phone_times["first_event_android_time"]
+    #offset_gaze_to_events = phone_times["Gaze_recording_start_time"] - phone_times["first_event_android_time"]
 
-    offset_phone_to_pc = phone_times["first_event_pc_time"] - phone_times["first_event_android_time"]
+    offset_phone_to_pc = phone_times["first_event_android_time"] - phone_times["first_event_pc_time"] 
 
     #remove offset relative to the first event from all the timestamps and add the first event timestamp to all the timestamps
-    left_timestamps = left_timestamps - offset_left_to_events + offset_phone_to_pc
-    right_timestamps = right_timestamps - offset_right_to_events + offset_phone_to_pc
-    world_timestamps = world_timestamps - offset_world_to_events + offset_phone_to_pc
-    gaze_timestamps = gaze_timestamps - offset_gaze_to_events + offset_phone_to_pc
-    events_timestamps = events_timestamps + offset_phone_to_pc
+    #left_timestamps = left_timestamps + offset_left_to_events + offset_phone_to_pc
+    #right_timestamps = right_timestamps + offset_right_to_events + offset_phone_to_pc
+    #world_timestamps = world_timestamps + offset_world_to_events + offset_phone_to_pc
+    #gaze_timestamps = gaze_timestamps - offset_gaze_to_events + offset_phone_to_pc
+    #events_df['system_timestamp [ns]'] = events_df['timestamp [ns]'] - offset_gaze_to_events + offset_phone_to_pc
+    #gaze_df['system_timestamp [ns]'] = gaze_df['timestamp [ns]'] + offset_phone_to_pc #FIXME not sure if this is correct, the offset is not the same as the one for the events bc it doesn t need to travel through the internet
+    #events_timestamps = events_timestamps + offset_phone_to_pc
 
-    print("left timestamp offset: " + str(offset_left_to_events/1000000000))
-    print("right timestamp offset: " + str(offset_right_to_events/1000000000))
-    print("world timestamp offset: " + str(offset_world_to_events/1000000000))
-    print("gaze timestamp offset: " + str(offset_gaze_to_events/1000000000))
-    print("events timestamp offset: " + str(offset_phone_to_pc/1000000000))
+    #print("left timestamp offset: " + str(offset_left_to_events/1000000000))
+    #print("right timestamp offset: " + str(offset_right_to_events/1000000000))
+    #print("world timestamp offset: " + str(offset_world_to_events/1000000000))
+    #print("gaze timestamp offset: " + str(offset_gaze_to_events/1000000000))
+    #print("events timestamp offset: " + str(offset_phone_to_pc/1000000000))
+
+    left_timestamps = left_timestamps + offset_phone_to_pc
+    right_timestamps = right_timestamps + offset_phone_to_pc
+    world_timestamps = world_timestamps + offset_phone_to_pc #+ 4366424608
+    gaze_df['system_timestamp [ns]'] = gaze_df['timestamp [ns]'] + offset_phone_to_pc
+    events_df['system_timestamp [ns]'] = events_df['timestamp [ns]'] + offset_phone_to_pc
 
 
+
+    #find the closest timestamp in the left and right eye cameras to the gaze timestamps
+    left_eye_frames = []
+    right_eye_frames = []
+    world_frames = []
+    events_frames = []
+    for gaze_timestamp in gaze_df['system_timestamp [ns]']:
+        left_eye_frame = find_closest_frame_to_timestamp(gaze_timestamp, left_timestamps)
+        right_eye_frame = find_closest_frame_to_timestamp(gaze_timestamp, right_timestamps)
+        world_frame = find_closest_frame_to_timestamp(gaze_timestamp, world_timestamps)
+        events_frame = find_closest_frame_to_timestamp(gaze_timestamp, events_df['system_timestamp [ns]'])
+        left_eye_frames.append(left_eye_frame)
+        right_eye_frames.append(right_eye_frame)
+        world_frames.append(world_frame)
+        events_frames.append(events_frame)
+
+    #create a new dataframe with the gaze timestamps and the corresponding frames in the left and right eye cameras
+    gaze_df['left_eye_frame'] = left_eye_frames
+    gaze_df['right_eye_frame'] = right_eye_frames
+    gaze_df['world_frame'] = world_frames
+    gaze_df['events_frame'] = events_frames
+    gaze_df.to_csv(recording_folder + "/gaze_with_frames_and_events.csv")
 
     return None
 
@@ -163,7 +193,7 @@ def get_first_frame_time(recording_id):
     print(devices)
     for device in devices:
         for line in data:
-            line_to_search = "MainActivity: updateDevice:actionType=1000, status=DeviceInfo({}/active)".format(device)
+            line_to_search = "MainActivity: updateDevice:actionType=1200, status=DeviceInfo({}/active)".format(device) #changed action type from 1000 to 1200
             if line_to_search in line:
                 recording_start_time = line.split(" ")[1]
                 recording_date = line.split(" ")[0] + "-" + str(current_year)

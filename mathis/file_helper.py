@@ -50,7 +50,7 @@ def extract_one_camera(input_file, output_folder, n_of_frames):
     (
         ffmpeg
         .input(input_file)
-    ).output(output_folder + "/" + "%d.png", start_number=0, vframes=n_of_frames, vsync = 2, loglevel="quiet").run()
+    ).output(output_folder + "/" + "%d.png", start_number=0, vframes=n_of_frames, vsync = 2, vf = "showinfo").run() #loglevel = 0
 
 def decode_timestamp(timestamp_path):
     ts = np.fromfile(timestamp_path, dtype=np.uint64)
@@ -66,7 +66,7 @@ def extract_frames(recording_id):
     timestamps_world = decode_timestamp(recording_folder + "/PI world v1 ps1.time")
     timestamps_left = timestamps_left - timestamps_left[0]
     timestamps_right = timestamps_right - timestamps_right[0]
-    timestamps_world = timestamps_world - timestamps_world[0]
+    timestamps_world = timestamps_world - timestamps_world[0] 
     timestamps = [timestamps_left, timestamps_right, timestamps_world]
     
     nb_of_timestamps_left = len(timestamps_left)
@@ -75,16 +75,14 @@ def extract_frames(recording_id):
 
     nb_of_timestamps = [nb_of_timestamps_left, nb_of_timestamps_right, nb_of_timestamps_world]
 
-    try:
-        for folder in camera_folders:
-            os.mkdir(recording_folder + "/" + folder)
-    except:
-        pass
+    
+    for folder in camera_folders:
+        os.mkdir(recording_folder + "/" + folder)
 
     for i in range(len(camera_names)):
         input_file = os.path.join(recording_folder + '/' +  camera_names[i] + ".mp4")
         output_folder = os.path.join(recording_folder +'/'+ camera_folders[i])
-        #extract_one_camera(input_file, output_folder, nb_of_timestamps[i])
-        extract_one_camera_using_timestamps(input_file, output_folder, timestamps[i])
+        extract_one_camera(input_file, output_folder, nb_of_timestamps[i])
+        #extract_one_camera_using_timestamps(input_file, output_folder, timestamps[i])
 
-#extract_frames('9480f94c-6052-4d26-86b7-f2383bf34de3')
+extract_frames('82e52db9-1cac-495d-99dd-bebb51c393a0')
