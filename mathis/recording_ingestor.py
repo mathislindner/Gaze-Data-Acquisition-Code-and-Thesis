@@ -5,7 +5,8 @@ from pupilcloud import Api, ApiException
 from constants import *
 import requests
 import os
-from file_helper import extract_frames, unzip_and_move_to_parent
+from file_helper import unzip_and_move_to_parent #, extract_frames
+from frames_extractor import extract_frames
 
 #object to download process one recording
 #TODO import from constants instead of the init arguments
@@ -60,6 +61,7 @@ class recordingCurator:
             print("Recording already curated")
             return
         #extract frames
+
         extract_frames(self.recording_id)
         correspond_cameras_and_gaze(self.recording_id)
         pass
