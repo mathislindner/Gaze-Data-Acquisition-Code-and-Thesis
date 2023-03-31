@@ -1,6 +1,6 @@
 #pupil labs libs
 from pupil_labs.realtime_api.simple import Device
-
+import  pupil_labs
 import pynput.keyboard as keyboard
 from time import time_ns, sleep
 from constants import recordings_folder
@@ -49,7 +49,7 @@ class AcquisitionLogic:
         battery = device.battery_level_percent
         assert (freestorage > 5e9), "Not enough free storage on device" #at least 5GB space
         assert (battery > 0.1), "Battery is too low" #at least 10% battery
-
+        #synchronization to the ntp server
         pc_recording_start_time = time_ns()
         self.recording_id = device.recording_start()
         self.save_offset_and_start_time(pc_recording_start_time)
@@ -96,9 +96,23 @@ class AcquisitionLogic:
         device.close()
         exit()
 
+    #FIXME: implement this and update every 10 seconds
+    def sync_device_to_system_time(self):
+        #estimate the offset between the pc and the device
+        current_time = time_ns()
+        current_time = pupil_labs.realtime_api.time_echo.time_ms()
+
+        estimate = device.estimate_time_offset()
+        time_offset_ms_mean = estimate.time_offset_ms.mean
+        roundtrip_duration_ms = estimate.roundtrip_duration_ms.mean
+        time_echo = pupil_labs.realtime_api.time_echo.TimeEcho(roundtrip_duration_ms, time_offset_ms_mean)
+        companion_app_time = current_time - time_offset_ms_mean
+
+    #FIXME:
     #https://pupil-labs-realtime-api.readthedocs.io/en/latest/examples/simple.html#send-event
     def save_offset_and_start_time(self, pc_recording_start_time):
         estimate = device.estimate_time_offset()
+
 
         clock_offset_ns = round(estimate.time_offset_ms.mean * 1_000_000)
         print(f"Clock offset: {clock_offset_ns:_d} ns")

@@ -287,19 +287,19 @@ if __name__ == "__main__":
             i_tmp = i + first_left_idx
             left_i = idx_g_l_r_w[i_tmp, 1]
             left_t = time_g_l_r_w[i_tmp, 1]
-            left_path = os.path.join(recording_folder, 'PI_left_v1_ps1', f'out{left_i+1}.png')
+            left_path = os.path.join(recording_folder, 'PI_left_v1_ps1', f'{left_i+1}.png')
             assert os.path.isfile(left_path)
             left_img = cv2.imread(left_path)
 
             right_i = idx_g_l_r_w[i_tmp, 2]
             right_t = time_g_l_r_w[i_tmp, 2]
-            right_path = os.path.join(recording_folder, 'PI_right_v1_ps1', f'out{right_i+1}.png')
+            right_path = os.path.join(recording_folder, 'PI_right_v1_ps1', f'{right_i+1}.png')
             assert os.path.isfile(right_path)
             right_img = cv2.imread(right_path)
 
             world_i = idx_g_l_r_w[i_tmp, 3]
             world_t = time_g_l_r_w[i_tmp, 3]
-            world_path = os.path.join(recording_folder, 'PI_world_v1_ps1', f'out{world_i+1}.png')
+            world_path = os.path.join(recording_folder, 'PI_world_v1_ps1', f'{world_i+1}.png')
             assert os.path.isfile(world_path)
             world_img = cv2.imread(world_path)
 
@@ -312,13 +312,13 @@ if __name__ == "__main__":
         plt.savefig('10_frames_debug.png')
         plt.close()
 
-    extract_frames('82e52db9-1cac-495d-99dd-bebb51c393a0')
+    #extract_frames('82e52db9-1cac-495d-99dd-bebb51c393a0')
     idx_g_l_r_w, time_g_l_r_w = correspond_cameras_and_gaze('82e52db9-1cac-495d-99dd-bebb51c393a0')
     # left flash idx: 3943 is 3955 unfiltered
 
     plot_10_images_from_gaze(recording_id='82e52db9-1cac-495d-99dd-bebb51c393a0', 
                              idx_g_l_r_w=idx_g_l_r_w, 
                              time_g_l_r_w=time_g_l_r_w,
-                             first_left_idx=4314) #3943 on # 4318 off
+                             first_left_idx=3943) #3943 on # 4318 off
 
     a = 1
