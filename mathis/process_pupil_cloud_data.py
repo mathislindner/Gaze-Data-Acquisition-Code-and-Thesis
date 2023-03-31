@@ -36,7 +36,8 @@ def curate_all_recordings_multiprocessing():
     to_curate = []
     #for each folder check if curated
     for recording in recordings:
-        if not os.path.exists(recordings_folder + recording + "/left_eye_frames/0.png"): #TODO: make this prettiermaybe? or create metadata file that says if curated or not
+        recording = os.path.join(recordings_folder, recording)
+        if not os.path.exists(os.path.join(recording,"PI_left_v1_ps1","0" + ".png")): #TODO: make this prettiermaybe? or create metadata file that says if curated or not
             to_curate.append(recording)
     pool = multiprocessing.Pool(processes=4)
     pool.map(curate_recording, to_curate)
@@ -47,7 +48,7 @@ def curate_recording(recording_id):
 
 #print current directory
 if __name__ == "__main__":
-    #download_all_recordings_multiprocessing()
+    download_all_recordings_multiprocessing()
     curate_all_recordings_multiprocessing()
-    #curate_recording(recording_id="be0f413f-0bdd-4053-a1d4-c03efd57e532")
+    #export_all_recordings_multiprocessing()
 

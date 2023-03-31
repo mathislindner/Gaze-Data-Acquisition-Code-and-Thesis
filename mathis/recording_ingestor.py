@@ -9,10 +9,8 @@ from file_helper import unzip_and_move_to_parent #, extract_frames
 from frames_extractor import extract_frames
 
 #object to download process one recording
-#TODO import from constants instead of the init arguments
 class  recordingDownloader:
     def __init__(self, recording_id, api):
-        #FIXME create api object here and remove argument from init
         self.workspace_id = workspace_id
         self.recording_id = recording_id
         self.recording_folder = recordings_folder + '/' + str(self.recording_id) 
@@ -55,7 +53,6 @@ class recordingCurator:
 
  
     def curate_recording(self):
-        #TODO: remove unecessary files
         #if path exists, don t curate
         if os.path.exists(self.recording_folder + "/left_eye_frames/0.png"):
             print("Recording already curated")
@@ -64,4 +61,15 @@ class recordingCurator:
 
         extract_frames(self.recording_id)
         correspond_cameras_and_gaze(self.recording_id)
+        #TODO: correspond_depth_and_gaze(self.recording_id)
+        pass
+
+#Object that does the final exportation of the recording to the final folder (where we only keep the frames where the gaze is looking for 2 seconds...)
+class recordingExporter:
+    def __init__(self, recording_id):
+        self.recording_id = recording_id
+        self.recording_folder = os.path.join(recordings_folder,str(self.recording_id))
+        print("Exporting recording:" + str(self.recording_id))
+
+    def export_recording(self):
         pass
