@@ -14,7 +14,7 @@ print("Device found!")
 
 class AcquisitionLogic:
     def __init__(self) -> None:
-        #TODO: check on device if recording or not isntead of using a bool (device._get_status())
+        #TODO: check on device if recording or not isntead of using a bool (device._get_status()) (although it would slow down the process)
         
         self.recording_bool = False
         self.event_id = 0
@@ -23,6 +23,7 @@ class AcquisitionLogic:
         self.start_record_key = keyboard.Key.up
         self.stop_record_key = keyboard.Key.down
         self.event_key = keyboard.Key.right
+        self.cancel_recording_key = keyboard.Key.x
         self.exit_key = keyboard.Key.esc
 
         print("press up to start recording")
@@ -39,6 +40,9 @@ class AcquisitionLogic:
         
         if key is self.event_key:
             self.trigger_event_process()
+
+        if key is self.cancel_recording_key:
+            self.cancel_recording_process()
         
         if key is self.exit_key:
             self.exit_process()
@@ -88,6 +92,16 @@ class AcquisitionLogic:
 
         self.event_id += 1
 
+    def cancel_recording_process(self):
+        if self.recording_bool == False:
+            print('Cannot cancel recording if not recording.')
+            return
+        #else cancel recording process
+        device.recording_cancel()
+        print(f'Cancelled recording.')
+        self.recording_bool = False
+        self.event_id = 0
+        
     def exit_process(self):
         if self.recording_bool == True:
             print('Wait! Recording is currently activated.')
