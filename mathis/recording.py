@@ -7,10 +7,13 @@ from constants import recordings_folder
 import os
 import json
 
-ip = "10.5.50.53"
+#connect to API for pupil labs device
+ip = "10.5.56.134"
 device = Device(address=ip, port="8080")
 assert device is not None, "No device found"
 print("Device found!")
+
+#TODO: initialize the depth camera
 
 class AcquisitionLogic:
     def __init__(self) -> None:
@@ -23,7 +26,7 @@ class AcquisitionLogic:
         self.start_record_key = keyboard.Key.up
         self.stop_record_key = keyboard.Key.down
         self.event_key = keyboard.Key.right
-        self.cancel_recording_key = keyboard.Key.x
+        self.cancel_recording_key = None
         self.exit_key = keyboard.Key.esc
 
         print("press up to start recording")
@@ -98,10 +101,12 @@ class AcquisitionLogic:
             return
         #else cancel recording process
         device.recording_cancel()
-        print(f'Cancelled recording.')
+        #delete recording folder and all its content
+        os.rmdir(recordings_folder + self.recording_id)
+        print('Cancelled recording {}'.format(self.recording_id))
         self.recording_bool = False
         self.event_id = 0
-        
+
     def exit_process(self):
         if self.recording_bool == True:
             print('Wait! Recording is currently activated.')

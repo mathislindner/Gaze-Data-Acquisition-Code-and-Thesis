@@ -77,7 +77,6 @@ def ffmpeg_extract_frames(filename, out_dir, **kwargs):
 
 def extract_frames(recording_id):
     recording_folder = os.path.join(recordings_folder, str(recording_id))
-
     timestamps_time = {}
     timestamps_ffprobe = {}
     metadata_ffprobe = {}
@@ -99,7 +98,8 @@ def extract_frames(recording_id):
         try:
             os.mkdir(output_folder)
         except:
-            raise FileExistsError
+            print(f'Folder {output_folder} already exists. Skipping curation.')
+            return
 
         timestamps_time[cam_i_] = decode_timestamp(time_file)
         timestamps_ffprobe[cam_i_] = ffprobe_extract_timestamps(mp4_file)
@@ -117,4 +117,4 @@ def extract_frames(recording_id):
             print(f'ffprobe: {len(timestamps_ffprobe[cam_i_])}')
             print(f'ffmpeg: {num_extracted_frames}')
 
-extract_frames("82e52db9-1cac-495d-99dd-bebb51c393a0")
+#extract_frames("82e52db9-1cac-495d-99dd-bebb51c393a0")

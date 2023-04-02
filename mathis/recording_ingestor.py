@@ -49,16 +49,15 @@ class recordingCurator:
     def __init__(self, recording_id):
         self.recording_id = recording_id
         self.recording_folder = os.path.join(recordings_folder,str(self.recording_id))
-        print("Curating recording:" + str(self.recording_id))
-
  
     def curate_recording(self):
         #if path exists, don t curate
-        if os.path.exists(self.recording_folder + "/left_eye_frames/0.png"):
-            print("Recording already curated")
-            return
-        #extract frames
-
+        frames_path = os.path.join(self.recording_folder, camera_names[0].replace(" ","_"), "0.png")
+        #if os.path.exists(frames_path): #already in the exctract frames function
+        #    print("Recording already curated")
+        #    return
+        
+        #else extract frames
         extract_frames(self.recording_id)
         correspond_cameras_and_gaze(self.recording_id)
         #TODO: correspond_depth_and_gaze(self.recording_id)

@@ -9,8 +9,8 @@ from constants import *
 import json
 from file_helper import decode_timestamp, get_system_start_ts
 
-def get_offset(recording_id):
-    recording_folder = recordings_folder + str(recording_id)
+def get_offset_from_log(recording_id):
+    recording_folder = os.path.join(recordings_folder, str(recording_id))
     #get the start time of the recording
     system_time_start = get_system_start_ts(recording_id)
     system_time_start = int(system_time_start) #FIXME I am not sure if the recording.begin event corresponds to what we want
@@ -21,6 +21,24 @@ def get_offset(recording_id):
     offset = pupil_labs_time - system_time_start
     return offset
 
+
+def get_offset_from_local_csv(recording_id):
+    recording_folder = os.path.join(recordings_folder, str(recording_id))
+    local_synchronisation_series = pd.read_json(os.path.join(recording_folder, 'local_synchronisation.json'), typ='series', convert_dates=False)
+    offset = local_synchronisation_series['offset']
+    return offset
+
+def add_events_from_csv_to_df(recording_id, df):
+    recording_folder = os.path.join(recordings_folder, str(recording_id))
+    local_synchronisation_series = pd.read_json(os.path.join(recording_folder, 'local_synchronisation.json'), typ='series', convert_dates=False)
+    events_series = local_synchronisation_series[local_synchronisation_series.index.str.startswith('Event: ')]
+    df['event_idx'] = None
+    #whenever the event time is met by the dataframe[timestamp [ns]] then add the event index to the event column for all events until the end of the dataframe
+    for event in events_series.index:
+        event_time = events_series[event]
+        df.loc[df['timestamp [ns]'] >= event_time, 'event_idx'] = event[-1]
+
+    return df
 
 def find_element_pairs(seq_1, seq_2):
     '''
@@ -107,7 +125,7 @@ def find_element_pairs(seq_1, seq_2):
 #
 def correspond_cameras_and_gaze(recording_id):
     recording_folder = recordings_folder + recording_id + "/"
-
+    print("correspond camera and gaze folder" + recording_folder)
     scale_factor = 10**9
     l_r_res = 1/200
     w_res = 1/30
@@ -115,8 +133,11 @@ def correspond_cameras_and_gaze(recording_id):
     gaze_df = pd.read_csv(os.path.join(recording_folder, "gaze.csv"))
     gaze_timestamps = gaze_df.values[:, 2] / scale_factor
     events_df = pd.read_csv(os.path.join(recording_folder, "events.csv")) #FIXME
+    events_timestamps = events_df['timestamp [ns]'] / scale_factor
     imu_df = pd.read_csv(os.path.join(recording_folder, "imu.csv"))
     imu_timestamps = imu_df.values[:, 2] / scale_factor
+
+
     left_timestamps = decode_timestamp(os.path.join(recording_folder, camera_names[0] + ".time")) / scale_factor
     right_timestamps = decode_timestamp(os.path.join(recording_folder, camera_names[1] + ".time")) / scale_factor
     world_timestamps = decode_timestamp(os.path.join(recording_folder, camera_names[2] + ".time")) / scale_factor
@@ -125,14 +146,17 @@ def correspond_cameras_and_gaze(recording_id):
     right_timestamps_rel = right_timestamps - gaze_timestamps[0]
     world_timestamps_rel = world_timestamps - gaze_timestamps[0]
     gaze_timestamps_rel = gaze_timestamps - gaze_timestamps[0]
+    events_timestamps_rel = events_timestamps - gaze_timestamps[0]
     imu_timestamps_rel = imu_timestamps - gaze_timestamps[0]
+
 
     best_pairs_gaze_left = find_element_pairs(gaze_timestamps_rel, left_timestamps_rel)
     best_pairs_gaze_right = find_element_pairs(gaze_timestamps_rel, right_timestamps_rel)
     best_pairs_gaze_world = find_element_pairs(gaze_timestamps_rel, world_timestamps_rel)
+    best_pairs_gaze_events = find_element_pairs(gaze_timestamps_rel, events_timestamps_rel)
     best_pairs_gaze_imu = find_element_pairs(gaze_timestamps_rel, imu_timestamps_rel)
 
-    assert gaze_timestamps_rel.shape[0] == best_pairs_gaze_left.shape[0] == best_pairs_gaze_right.shape[0] == best_pairs_gaze_world.shape[0]
+    assert gaze_timestamps_rel.shape[0] == best_pairs_gaze_left.shape[0] == best_pairs_gaze_right.shape[0] == best_pairs_gaze_world.shape[0] == best_pairs_gaze_events.shape[0] == best_pairs_gaze_imu.shape[0]
 
     #convert the timestamps to system time
     idx_g_l_r_w_i =  np.concatenate((best_pairs_gaze_left[:, 0:1], 
@@ -140,6 +164,7 @@ def correspond_cameras_and_gaze(recording_id):
                                      best_pairs_gaze_right[:, 2:3],
                                      best_pairs_gaze_world[:, 2:3],
                                      best_pairs_gaze_imu[:, 2:3],
+                                     best_pairs_gaze_events[:, 2:3],
                                      ), axis=1)
     idx_g_l_r_w_i = idx_g_l_r_w_i.astype(np.int64)
     time_g_l_r_w_i =  np.concatenate((best_pairs_gaze_left[:, 1:2], 
@@ -147,6 +172,7 @@ def correspond_cameras_and_gaze(recording_id):
                                     best_pairs_gaze_right[:, 3:4],
                                     best_pairs_gaze_world[:, 3:4],
                                     best_pairs_gaze_imu[:, 3:4],
+                                    best_pairs_gaze_events[:, 3:4],
                                     ), axis=1)
     
     # Discard when there is a gap bigger than what is expected from sensors frequency
@@ -164,10 +190,11 @@ def correspond_cameras_and_gaze(recording_id):
     gaze_df['right_eye_idx'] = idx_g_l_r_w_i[:, 2]
     gaze_df['world_idx'] = idx_g_l_r_w_i[:, 3]
     gaze_df['imu_idx'] = idx_g_l_r_w_i[:, 4]
-    
-    gaze_df["timestamp [ns]"] = gaze_df["timestamp [ns]"] + get_offset(recording_id)
+    #gaze_df['event_idx'] = idx_g_l_r_w_i[:, 5]
 
-    gaze_df.to_csv(recording_folder + "/gaze_with_frames_and_events.csv")
+    gaze_df["timestamp [ns]"] = gaze_df["timestamp [ns]"] - get_offset_from_local_csv(recording_id) #FIXME: check if - or +
+    gaze_df = add_events_from_csv_to_df(recording_id, gaze_df)
+    gaze_df.to_csv(recording_folder + "/full_df.csv", index=False)
 
-#correspond_cameras_and_gaze("82e52db9-1cac-495d-99dd-bebb51c393a0")
-print(get_offset("82e52db9-1cac-495d-99dd-bebb51c393a0"))
+#correspond_cameras_and_gaze("be0f413f-0bdd-4053-a1d4-c03efd57e532")
+#print(get_offset("82e52db9-1cac-495d-99dd-bebb51c393a0"))
