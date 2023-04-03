@@ -82,12 +82,26 @@ class recordingExporter:
             return
         print("Exporting recording:" + str(self.recording_id))
         #create export folder
-        os.mkdir(self.export_folder)
-        full_df = pd.read_csv(os.path.join(self.recording_folder, "full_df.csv"))
+        #os.mkdir(self.export_folder)
+        full_df = pd.read_csv(os.path.join(self.recording_folder, "full_df.csv"),dtype={"event": str}) #importing as string because of NaN values
+        first_event_occurences = full_df.groupby("event").first()["timestamp [ns]"]
         #after event seen for the first time in the full_df, skip 0.1 seconds and take the next 2 seconds
-        #then save the frames in the export folder in a folder named after the event
-        first_event_occurences = full_df.groupby("event").first().astype(int)
-        print(first_event_occurences)
+        timestamps_start = first_event_occurences + 100000000 
+        timestamps_end = timestamps_start + 2000000000
+        for timestamp_start, timestamp_end in zip(timestamps_start, timestamps_end):
+            #get the frames in the time interval
+            frames = full_df[(full_df["timestamp [ns]"] > timestamp_start) & (full_df["timestamp [ns]"] < timestamp_end)]
+            for camera_name in camera_names:
+                frames = frames[frames["camera"] == camera_name] #FIXME: left_idx ... right_idx ... world_idx                
+                #create folder for the camera
+                camera_export_folder = os.path.join(self.export_folder, camera_name)
+                if not os.path.exists(camera_export_folder):
+                    os.mkdir(camera_export_folder)
+                #copy frames to the export folder
+                for frame in frames["frame"]:
+                    frame_path = os.path.join(self.recording_folder, camera_name.replace(" ","_"), str(frame) + ".png")
+                    #print(frame_path)
+                    os.system("copy " + frame_path + " " + camera_export_folder)
         
 recording_exporter = recordingExporter("a0df90ce-1351-45bb-af10-72f91e67c43e")
 recording_exporter.export_recording()
