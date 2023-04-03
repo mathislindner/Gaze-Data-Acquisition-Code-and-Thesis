@@ -52,6 +52,7 @@ class recordingCurator:
  
     def curate_recording(self):
         #if path exists, don t curate
+        #TODO: move the path checking function from extract frames to here
         frames_path = os.path.join(self.recording_folder, camera_names[0].replace(" ","_"), "0.png")
         #if os.path.exists(frames_path): #already in the exctract frames function
         #    print("Recording already curated")
@@ -60,7 +61,6 @@ class recordingCurator:
         #else extract frames
         extract_frames(self.recording_id)
         correspond_cameras_and_gaze(self.recording_id)
-        #TODO: correspond_depth_and_gaze(self.recording_id)
         pass
 
 #Object that does the final exportation of the recording to the final folder (where we only keep the frames where the gaze is looking for 2 seconds...)
@@ -68,7 +68,26 @@ class recordingExporter:
     def __init__(self, recording_id):
         self.recording_id = recording_id
         self.recording_folder = os.path.join(recordings_folder,str(self.recording_id))
-        print("Exporting recording:" + str(self.recording_id))
+        self.export_folder = os.path.join(exports_folder,str(self.recording_id))
 
+    def is_already_exported(self):
+        if os.path.exists(self.export_folder):
+            print("Recording already exported")
+            return True
+        else:
+            return False
+        
     def export_recording(self):
-        pass
+        if self.is_already_exported():
+            return
+        print("Exporting recording:" + str(self.recording_id))
+        #create export folder
+        os.mkdir(self.export_folder)
+        full_df = pd.read_csv(os.path.join(self.recording_folder, "full_df.csv"))
+        #after event seen for the first time in the full_df, skip 0.1 seconds and take the next 2 seconds
+        #then save the frames in the export folder in a folder named after the event
+        first_event_occurences = full_df.groupby("event").first().astype(int)
+        print(first_event_occurences)
+        
+recording_exporter = recordingExporter("a0df90ce-1351-45bb-af10-72f91e67c43e")
+recording_exporter.export_recording()
