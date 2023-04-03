@@ -6,6 +6,7 @@ import socket
 camera_names = ["PI left v1 ps1", "PI right v1 ps1", "PI world v1 ps1"]
 camera_folders = ["PI_left_v1_ps1", "PI_right_v1_ps1", "PI_world_v1_ps1"]
 workspace_id = "9ae5e987-5235-486f-8552-427014bbedcd"
+indices_names = ["left_idx", "right_idx", "world_idx"]
 
 username = getpass.getuser()
 host = socket.gethostname()
