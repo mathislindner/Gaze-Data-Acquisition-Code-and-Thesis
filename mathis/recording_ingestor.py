@@ -84,24 +84,67 @@ class recordingExporter:
         #create export folder
         #os.mkdir(self.export_folder)
         full_df = pd.read_csv(os.path.join(self.recording_folder, "full_df.csv"),dtype={"event": str}) #importing as string because of NaN values
-        first_event_occurences = full_df.groupby("event").first()["timestamp [ns]"]
-        #after event seen for the first time in the full_df, skip 0.1 seconds and take the next 2 seconds
-        timestamps_start = first_event_occurences + 100000000 
-        timestamps_end = timestamps_start + 2000000000
-        for timestamp_start, timestamp_end in zip(timestamps_start, timestamps_end):
-            #get the frames in the time interval
-            frames = full_df[(full_df["timestamp [ns]"] > timestamp_start) & (full_df["timestamp [ns]"] < timestamp_end)]
-            for camera_name in camera_names:
-                frames = frames[frames["camera"] == camera_name] #FIXME: left_idx ... right_idx ... world_idx                
-                #create folder for the camera
-                camera_export_folder = os.path.join(self.export_folder, camera_name)
-                if not os.path.exists(camera_export_folder):
-                    os.mkdir(camera_export_folder)
-                #copy frames to the export folder
-                for frame in frames["frame"]:
-                    frame_path = os.path.join(self.recording_folder, camera_name.replace(" ","_"), str(frame) + ".png")
-                    #print(frame_path)
-                    os.system("copy " + frame_path + " " + camera_export_folder)
+        first_event_occurences = full_df.groupby("event").first().index.values
+        #after event seen for the first time in the full_df, skip 0.1 seconds and take the next 400frames
+        timestamps_start = first_event_occurences + 1/200*0.1 #0.1 seconds after the first occurence
+        for i in range(len(timestamps_start)):
+            sub_df = full_df[full_df.index > timestamps_start[i]].head(400)
+            print(sub_df)
+            event_folder = os.path.join(self.export_folder, str(i))
+            os.mkdir(event_folder)
+            #add a csv file with the gaze data
+            #TODO: maybe we want this in a different format/ different location
+            sub_df.to_csv(os.path.join(event_folder, "gaze_data.csv"), index = False)
+            #add wearer information to the folder
+            os.system("copy " + os.path.join(self.recording_folder, "wearer.json") + " " + event_folder)
+            for camera_folder, indices_name in zip(camera_names, indices_names):
+                os.mkdir(path = os.path.join(event_folder, camera_folder))
+                #copy frames to new camera folder according to the indices in the sub_df
+                camera_frames = sub_df[indices_name]
+                for camera_frame in camera_frames:
+                    os.system("copy " + os.path.join(self.recording_folder, camera_folder, str(camera_frame) + ".png") + " " + os.path.join(event_folder, camera_folder))
+                    
+    #TODO: this function would be used differently (not in the the class since it is not related to a specific recording))        
+    def export_all_recordings_by_wearer_folder(self):
+        #go through all the recordings in the recordings folder and look for wearer.json
+        recordings = os.listdir(recordings_folder)
+        for recording in recordings:
+            user_id = json.load(open(os.path.join(recordings_folder, recording, "wearer.json")))["user_id"]
+            #create a folder for the user if it doesn t exist
+            try:
+                os.mkdir(path = os.path.join(exports_folder, user_id))
+            except:
+                pass
+            #create a subfolder for the recording
+            try:
+                os.mkdir(path = os.path.join(exports_folder, user_id, recording))
+            except:
+                pass
+            
+            #do the same as in the export_recording function
+            full_df = pd.read_csv(os.path.join(self.recording_folder, "full_df.csv"),dtype={"event": str}) #importing as string because of NaN values
+            first_event_occurences = full_df.groupby("event").first().index.values
+            #after event seen for the first time in the full_df, skip 0.1 seconds and take the next 400frames
+            timestamps_start = first_event_occurences + 1/200*0.1 #0.1 seconds after the first occurence
+            for i in range(len(timestamps_start)):
+                sub_df = full_df[full_df.index > timestamps_start[i]].head(400)
+                print(sub_df)
+                event_folder = os.path.join(self.export_folder, user_id, recording, str(i))
+                os.mkdir(path = event_folder)
+                #add a csv file with the gaze data
+                #TODO: maybe we want this in a different format/ different location
+                sub_df.to_csv(os.path.join(event_folder, "gaze_data.csv"), index = False)
+                
+                for camera_folder, indices_name in zip(camera_names, indices_names):
+                    os.mkdir(path = os.path.join(event_folder, camera_folder))
+                    #copy frames to new camera folder according to the indices in the sub_df
+                    camera_frames = sub_df[indices_name]
+                    for camera_frame in camera_frames:
+                        os.system("copy " + os.path.join(self.recording_folder, camera_folder, str(camera_frame) + ".png") + " " + os.path.join(event_folder, camera_folder))
+            
+                
+                
+        
         
 #recording_exporter = recordingExporter("a0df90ce-1351-45bb-af10-72f91e67c43e")
 #recording_exporter.export_recording()
