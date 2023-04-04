@@ -103,5 +103,5 @@ class recordingExporter:
                     #print(frame_path)
                     os.system("copy " + frame_path + " " + camera_export_folder)
         
-recording_exporter = recordingExporter("a0df90ce-1351-45bb-af10-72f91e67c43e")
-recording_exporter.export_recording()
+#recording_exporter = recordingExporter("a0df90ce-1351-45bb-af10-72f91e67c43e")
+#recording_exporter.export_recording()
