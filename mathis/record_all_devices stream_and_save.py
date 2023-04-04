@@ -8,8 +8,10 @@ import pyrealsense2 as rs
 #general libs
 import pynput.keyboard as keyboard
 from time import time_ns, sleep
-import multiprocessing as mp
+#import multiprocessing as mp
 import threading
+import queue
+import cv2
 from constants import recordings_folder
 import numpy as np
 import os
@@ -27,19 +29,18 @@ class Pupil_Camera():
         self.device.stop_recording()
 
 class DepthCamera(threading.Thread):
-    def __init__(self,recording_time = 15):
+    def __init__(self, recording_time = 15):
         super().__init__()
         self.stop_event = threading.Event()
         self.frame_queue = queue.Queue()
         
-        max_frames =  recording_time * 30 * 60
+        self.max_frames =  recording_time * 30 * 60
         self.pipeline = rs.pipeline()
         self.config = rs.config()
         #FIXME maybe create a thread for each depth and color stream
         self.config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
         self.config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
         #initialize the arrays
-        #FIXME this creates too much data 5*60*30*480*640*4*16 bits = 22GB
         self.recording_timestamps = np.zeros((self.max_frames), dtype=np.int64)
         
     def run(self):
@@ -48,19 +49,18 @@ class DepthCamera(threading.Thread):
             frames = self.pipeline.wait_for_frames()
             depth_frame = frames.get_depth_frame()
             color_frame = frames.get_color_frame()
+            frame_number = frames.get_frame_number()
             timestamp = time_ns()
             if not depth_frame or not color_frame:
                 continue
             else:
                 self.recording_timestamps[i] = timestamp
-                self.frame_queue.put((depth_frame,color_frame))
+                self.frame_queue.put((depth_frame,color_frame, frame_number))
                 self.recording_timestamps
         
-    def stop_recording(self, recording_id):
-        self.stop_event.set()
+    def stop_recording(self):
         self.pipeline.stop()
-        self.save_recording(recording_id)
-        print("depth camera recording saved")
+        self.stop_event.set()
         #TODO: wait until all the images are saved before resetting the class
         
         #self.__init__() #reset the class for next recording
@@ -69,17 +69,23 @@ class Storage_Thread(threading.Thread):
     
     def start_recording(self,recording_id):
         super().__init__()
-        self.output_file = output_file
+        self.recording_id = recording_id
+        self.output_file = os.path.join(recordings_folder, self.recording_id, "depth_camera.npz")
         self.stop_event = threading.Event()
         self.frame_queue = queue.Queue()
         
     def run(self):
         while not self.stop_event.is_set():
             try:
-                depth_frame, color_frame = self.frame_queue.get(timeout=0.1)
-                np.savez_compressed(self.output_file, depth_frame, color_frame)
+                depth_frame, color_frame, frame_number = self.frame_queue.get(timeout=0.1)
+                #save the frames to png
+                cv2.imwrite(os.path.join(recordings_folder, self.recording_id, "depth", f"{frame_number}.png"), depth_frame)
+                cv2.imwrite(os.path.join(recordings_folder, self.recording_id, "color", f"{frame_number}.png"), color_frame)
             except queue.Empty:
                 pass
+
+    def stop(self):
+        self.stop_event.set()
 
 
 ############################################################################################################
@@ -98,8 +104,10 @@ class AcquisitionLogic:
 
         self.pupil_camera = Pupil_Camera(device)
         self.depth_camera = DepthCamera()
-        self.depth_camera_process = None #we need to store the process to be able to stop it
-        self.pupil_camera_process = None
+
+        self.storage_thread = Storage_Thread(self.recording_id)
+        #self.depth_camera_process = None #we need to store the process to be able to stop it
+        #self.pupil_camera_process = None
 
         self.start_record_key = keyboard.Key.up
         self.stop_record_key = keyboard.Key.down
@@ -145,7 +153,7 @@ class AcquisitionLogic:
         self.recording_bool = False
         print("recording stopped")
         
-
+#https://stackoverflow.com/questions/55880569/how-do-i-make-pynput-keyboard-run-as-a-thread
 if __name__ == "__main__":
     acquisition_logic = AcquisitionLogic()
     with keyboard.Listener(on_press=acquisition_logic.on_press) as listener:
