@@ -20,12 +20,15 @@ import json
 #this class is more for consistency than usefullness
 class Pupil_Camera():
     def __init__(self, device) -> None:
+        return
         self.device = device
 
     def start_recording(self):
+        return
         self.device.start_recording()
 
     def stop_recording(self):
+        return
         self.device.stop_recording()
 
 class DepthCamera(threading.Thread):
@@ -37,16 +40,17 @@ class DepthCamera(threading.Thread):
         self.max_frames =  recording_time * 30 * 60
         self.pipeline = rs.pipeline()
         self.config = rs.config()
-        #FIXME maybe create a thread for each depth and color stream
         self.config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
         self.config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
         #initialize the arrays
         self.recording_timestamps = np.zeros((self.max_frames), dtype=np.int64)
         
-    def run(self):
+    def start_recording(self):
         i = 0
+        self.pipeline.start(self.config)
         while not self.stop_event.is_set():
-            frames = self.pipeline.wait_for_frames()
+            
+            frames = self.pipeline.wait_for_frames(timeout_ms = 10000)
             depth_frame = frames.get_depth_frame()
             color_frame = frames.get_color_frame()
             frame_number = frames.get_frame_number()
@@ -54,9 +58,9 @@ class DepthCamera(threading.Thread):
             if not depth_frame or not color_frame:
                 continue
             else:
+                print (f"frame number: {frame_number}")
                 self.recording_timestamps[i] = timestamp
                 self.frame_queue.put((depth_frame,color_frame, frame_number))
-                self.recording_timestamps
         
     def stop_recording(self):
         self.pipeline.stop()
@@ -91,19 +95,20 @@ class Storage_Thread(threading.Thread):
 ############################################################################################################
 class AcquisitionLogic:
     def __init__(self) -> None:
-        
+        device = None
+        """
         #connect to API for pupil labs device
         ip = "10.5.56.134"
         device = Device(address=ip, port="8080")
         assert device is not None, "No device found"
         print("Device found!")
-
+        """
         self.recording_bool = False
         self.event_id = 0
         self.recording_id = None
 
         self.pupil_camera = Pupil_Camera(device)
-        self.depth_camera = DepthCamera()
+        self.depth_camera_thread = DepthCamera()
 
         self.storage_thread = Storage_Thread(self.recording_id)
         #self.depth_camera_process = None #we need to store the process to be able to stop it
@@ -120,11 +125,12 @@ class AcquisitionLogic:
     def on_press(self, key):
         if key is self.start_record_key:
             if self.recording_bool == True:
-                raise Exception('Recording is currently activated.')
+                print('Recording is currently activated.')
             #else start recording process
             self.start_record_process()
         
         if key is self.stop_record_key:
+            self.recording_bool = False
             self.stop_record_process()
         
         if key is self.event_key:
@@ -139,17 +145,42 @@ class AcquisitionLogic:
     def start_record_process(self):
         #we have to start the pupil camera process first, otherwise we can t get the recording id
         self.recording_id = self.pupil_camera.start_recording()
-        self.depth_camera_process = mp.Process(target=self.depth_camera.start_recording, args=(self.recording_id,))
-        self.depth_camera_process.start()
+        #self.depth_camera_process = mp.Process(target=self.depth_camera.start_recording, args=(self.recording_id,))
+        self.depth_camera_thread.start_recording()
+        self.storage_thread.start()
         self.recording_bool = True
+
+        while True:
+            print("in true loop")
+            depth_frames = self.depth_camera_thread.frame_queue.get()
+            self.storage_thread.frame_queue.put(depth_frames)
+            if self.recording_bool == False:
+                self.stop_record_process()
+                break
+        
+        self.depth_camera_thread.stop_recording()
+        self.depth_camera_thread.join()
+        self.storage_thread.stop()
+        self.storage_thread.join()
+        
+        self.pupil_camera.stop_recording()
+        self.recording_bool = False
+        
+
         print("recording started")
 
     def stop_record_process(self):
         if self.recording_bool == False:
             raise Exception('Recording is currently deactivated.')
-        self.depth_camera_process.terminate()
+        
+        
         self.pupil_camera.stop_recording()
-        self.depth_camera.stop_recording()
+        self.depth_camera_thread.stop_recording()
+        self.storage_thread.stop()
+
+        self.depth_camera_thread.join()
+        self.storage_thread.join()
+
         self.recording_bool = False
         print("recording stopped")
         
