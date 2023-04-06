@@ -110,7 +110,7 @@ class AcquisitionLogic:
         self.pupil_camera = Pupil_Camera(device)
         self.depth_camera_thread = DepthCamera()
 
-        self.storage_thread = Storage_Thread(self.recording_id)
+        self.storage_thread = None
         #self.depth_camera_process = None #we need to store the process to be able to stop it
         #self.pupil_camera_process = None
 
@@ -147,6 +147,8 @@ class AcquisitionLogic:
         self.recording_id = self.pupil_camera.start_recording()
         #self.depth_camera_process = mp.Process(target=self.depth_camera.start_recording, args=(self.recording_id,))
         self.depth_camera_thread.start_recording()
+
+        self.storage_thread = Storage_Thread(self.recording_id) #we need tostart it here,else error
         self.storage_thread.start()
         self.recording_bool = True
 
@@ -156,16 +158,7 @@ class AcquisitionLogic:
             self.storage_thread.frame_queue.put(depth_frames)
             if self.recording_bool == False:
                 self.stop_record_process()
-                break
-        
-        self.depth_camera_thread.stop_recording()
-        self.depth_camera_thread.join()
-        self.storage_thread.stop()
-        self.storage_thread.join()
-        
-        self.pupil_camera.stop_recording()
-        self.recording_bool = False
-        
+                break        
 
         print("recording started")
 
