@@ -1,10 +1,11 @@
 import pyrealsense2 as rs
 import numpy as np
 import cv2
-from threading import Thread
+from threading import Thread, Event
 from time import sleep
 import os
 from constants import *
+import pynput.keyboard as keyboard
 
 # Code taken and modified from:
 # https://github.com/IntelRealSense/librealsense/blob/master/wrappers/python/examples/python-rs400-advanced-mode-example.py
@@ -25,7 +26,8 @@ class RealSenseStream(Thread):
         self.config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
         self.config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
 
-    def start(self):
+    def start_recording(self):
+        self.start()
          # Start streaming
         self.pipeline.start(self.config)
         
@@ -48,7 +50,7 @@ class RealSenseStream(Thread):
 
         return depth_image, color_image, t, frame_number
 
-    def stop(self):
+    def stop_recording(self):
         self.pipeline.stop()
         self.config.disable_all_streams()
 
@@ -62,10 +64,11 @@ class Storage(Thread):
         self.path = os.path.join(recordings_folder, self.recording_id)
         self.cam_stream = cam_stream
         self.timestamps = np.zeros((100000), dtype=np.int64)
-        self.event_loop = Thread(target=self.start)
+        self.stop_event = Event()
 
-    def start(self):
-        while self.event_loop:
+    def start_saving(self):
+        self.start()
+        while not self.stop_event.is_set():
             depth_image, color_image, t, frame_number = self.cam_stream.load_recent_frame()
             if depth_image is None:
                 continue
@@ -75,42 +78,51 @@ class Storage(Thread):
                 cv2.imwrite(os.path.join(self.path,"color_image","{}.png".format(frame_number)), color_image)
                 self.timestamps[frame_number] = t
                 #print("Images saved")
-            if frame_number > 100:
-                self.event_loop.stop()
 
-    def stop(self):
+    def stop_saving(self):
         #remove all non-zero elements from timestamps
         self.timestamps = self.timestamps[self.timestamps != 0]
         np.save(os.path.join(self.path,"depth_cam_timestamps.npy"), self.timestamps)
         pass
 
-class acquisitionLogic(Thread):
-    def __init__(self, stop_time = 2):
-        super().__init__()
-        self.stop_time = stop_time
-        
-        self.cam_thread = RealSenseStream()
-        self.cam_thread.start()
-        self.storage_thread = Storage(self.cam_thread)
-        self.storage_thread.start()
-        self.start()
+class acquisitionLogic():
+    def __init__(self):
+        #super().__init__()
+        self.storage_thread = None
+        self.cam_thread = None    
 
+    def on_press(self, key):
+        if key == keyboard.Key.down:
+            self.stop()
+        if key == keyboard.Key.esc:
+            exit()
+        else:
+            print("key pressed")
+        
     def start(self):
-        sleep(3)
-        print("hello")
-        self.stop()
+        self.cam_thread = RealSenseStream()
+        self.cam_thread.start_recording()
+        self.storage_thread = Storage(self.cam_thread)
+        self.storage_thread.start_saving()
 
     def stop(self):
-        self.cam_thread.stop()
-        self.storage_thread.stop()
-
+        self.storage_thread.stop_event.set()
         self.cam_thread.join()
         self.storage_thread.join()
 
+        self.cam_thread.stop_recording()
+        self.storage_thread.stop_saving()
+        print("threads stopped and everything is saved")
+
+        
+
 if __name__ == '__main__':
+    #add keyboard interrupt
     acqlog = acquisitionLogic()
-    print("hello")
-    acqlog.start()
     
+    with keyboard.Listener(on_press=acqlog.on_press) as listener:
+        acqlog.start()
+        listener.join()
+       
 
         
