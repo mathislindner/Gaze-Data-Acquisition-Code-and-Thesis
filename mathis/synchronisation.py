@@ -136,6 +136,8 @@ def correspond_cameras_and_gaze(recording_id):
     events_timestamps = events_df['timestamp [ns]'] / scale_factor
     imu_df = pd.read_csv(os.path.join(recording_folder, "imu.csv"))
     imu_timestamps = imu_df.values[:, 2] / scale_factor
+    depth_camera_df = pd.read_csv(os.path.join(recording_folder, "depth_camera.csv"))
+    depth_camera_timestamps = depth_camera_df["timestamps"]/scale_factor #FIXME check this one
 
 
     left_timestamps = decode_timestamp(os.path.join(recording_folder, camera_names[0] + ".time")) / scale_factor
@@ -148,6 +150,8 @@ def correspond_cameras_and_gaze(recording_id):
     gaze_timestamps_rel = gaze_timestamps - gaze_timestamps[0]
     events_timestamps_rel = events_timestamps - gaze_timestamps[0]
     imu_timestamps_rel = imu_timestamps - gaze_timestamps[0]
+    depth_camera_timestamps_rel = depth_camera_timestamps - gaze_timestamps[0] +  get_offset_from_local_csv(recording_id) #FIXME Check if + or -
+
 
 
     best_pairs_gaze_left = find_element_pairs(gaze_timestamps_rel, left_timestamps_rel)
@@ -155,8 +159,9 @@ def correspond_cameras_and_gaze(recording_id):
     best_pairs_gaze_world = find_element_pairs(gaze_timestamps_rel, world_timestamps_rel)
     best_pairs_gaze_events = find_element_pairs(gaze_timestamps_rel, events_timestamps_rel)
     best_pairs_gaze_imu = find_element_pairs(gaze_timestamps_rel, imu_timestamps_rel)
+    best_pairs_gaze_depth_camera = find_element_pairs(gaze_timestamps_rel, depth_camera_timestamps_rel)
 
-    assert gaze_timestamps_rel.shape[0] == best_pairs_gaze_left.shape[0] == best_pairs_gaze_right.shape[0] == best_pairs_gaze_world.shape[0] == best_pairs_gaze_events.shape[0] == best_pairs_gaze_imu.shape[0]
+    assert gaze_timestamps_rel.shape[0] == best_pairs_gaze_left.shape[0] == best_pairs_gaze_right.shape[0] == best_pairs_gaze_world.shape[0] == best_pairs_gaze_events.shape[0] == best_pairs_gaze_imu.shape[0] == best_pairs_gaze_depth_camera.shape[0]
 
     #convert the timestamps to system time
     idx_g_l_r_w_i =  np.concatenate((best_pairs_gaze_left[:, 0:1], 
@@ -165,6 +170,7 @@ def correspond_cameras_and_gaze(recording_id):
                                      best_pairs_gaze_world[:, 2:3],
                                      best_pairs_gaze_imu[:, 2:3],
                                      best_pairs_gaze_events[:, 2:3],
+                                     best_pairs_gaze_depth_camera[:, 2:3],
                                      ), axis=1)
     idx_g_l_r_w_i = idx_g_l_r_w_i.astype(np.int64)
     time_g_l_r_w_i =  np.concatenate((best_pairs_gaze_left[:, 1:2], 
@@ -173,6 +179,7 @@ def correspond_cameras_and_gaze(recording_id):
                                     best_pairs_gaze_world[:, 3:4],
                                     best_pairs_gaze_imu[:, 3:4],
                                     best_pairs_gaze_events[:, 3:4],
+                                    best_pairs_gaze_depth_camera[:, 3:4],
                                     ), axis=1)
     
     # Discard when there is a gap bigger than what is expected from sensors frequency
@@ -190,7 +197,8 @@ def correspond_cameras_and_gaze(recording_id):
     gaze_df['right_eye_idx'] = idx_g_l_r_w_i[:, 2]
     gaze_df['world_idx'] = idx_g_l_r_w_i[:, 3]
     gaze_df['imu_idx'] = idx_g_l_r_w_i[:, 4]
-    #gaze_df['event_idx'] = idx_g_l_r_w_i[:, 5]
+    gaze_df['events_idx'] = idx_g_l_r_w_i[:, 5]
+    gaze_df['depth_camera_idx'] = idx_g_l_r_w_i[:, 6]
 
     gaze_df["timestamp [ns]"] = gaze_df["timestamp [ns]"] - get_offset_from_local_csv(recording_id) #FIXME: check if - or +
     gaze_df = add_events_from_csv_to_df(recording_id, gaze_df)

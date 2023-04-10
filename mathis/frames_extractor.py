@@ -4,6 +4,8 @@ import json
 import numpy as np
 from file_helper import decode_timestamp
 from constants import *
+import cv2
+import pyrealsense2 as rs
 
 
 def convert_kwargs_to_cmd_line_args(kwargs):
@@ -116,5 +118,48 @@ def extract_frames(recording_id):
             print(f'.time file: {len(timestamps_time[cam_i_])}')
             print(f'ffprobe: {len(timestamps_ffprobe[cam_i_])}')
             print(f'ffmpeg: {num_extracted_frames}')
+
+
+def extract_depth_camera_frames(recording_id):
+    recording_folder = os.path.join(recordings_folder, str(recording_id))
+    #make sure that timestamps are in ns and not ms
+    pipeline = rs.pipeline()
+    config = rs.config()
+    config.enable_device_from_file(os.path.join(recording_folder, "realsensed435.bag"), repeat_playback=False)
+    profile = pipeline.start(config)
+
+    #save the frames to png, save the timestamps to a csv file corresponding to the frame number
+    i = 0
+
+    timestamps = []
+    #while the bag file is not finished
+    while True:
+        try:
+            frames = pipeline.wait_for_frames()
+        except:
+            break
+        color_frame = frames.get_color_frame()
+        depth_frame = frames.get_depth_frame()
+        if not color_frame or not depth_frame:
+            continue
+        else:
+            #save the frames to png
+            color_image = np.asanyarray(color_frame.get_data())
+            depth_image = np.asanyarray(depth_frame.get_data())
+
+            cv2.imwrite(os.path.join(recording_folder, "rgb_image", str(i) + ".png"), color_image)
+            cv2.imwrite(os.path.join(recording_folder, "depth_image", str(i) + ".png"), depth_image)
+            
+
+            #add the timestamp to the list and convert from ms to ns
+            timestamps.append(frames.get_timestamp() * 1000)
+            i += 1
+
+    #save the timestamps to a csv file
+    timestamps_df = pd.DataFrame(timestamps)
+    timestamps_df.to_csv(os.path.join(recording_folder, "depth_camera_timestamps.csv"), index=False)
+
+    #stop the pipeline
+    pipeline.stop()
 
 #extract_frames("82e52db9-1cac-495d-99dd-bebb51c393a0")

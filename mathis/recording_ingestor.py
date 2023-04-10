@@ -6,7 +6,7 @@ from constants import *
 import requests
 import os
 from file_helper import unzip_and_move_to_parent #, extract_frames
-from frames_extractor import extract_frames
+from frames_extractor import extract_frames, extract_depth_camera_frames
 
 #object to download process one recording
 class  recordingDownloader:
@@ -60,6 +60,7 @@ class recordingCurator:
         
         #else extract frames
         extract_frames(self.recording_id)
+        extract_depth_camera_frames(self.recording_id)
         correspond_cameras_and_gaze(self.recording_id)
         pass
 
