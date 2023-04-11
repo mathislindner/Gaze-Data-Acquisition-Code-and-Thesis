@@ -13,8 +13,6 @@ device = Device(address=ip, port="8080")
 assert device is not None, "No device found"
 print("Device found!")
 
-#TODO: initialize the depth camera
-
 class AcquisitionLogic:
     def __init__(self) -> None:
         #TODO: check on device if recording or not isntead of using a bool (device._get_status()) (although it would slow down the process)

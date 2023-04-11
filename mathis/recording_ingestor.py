@@ -4,7 +4,7 @@ from synchronisation import correspond_cameras_and_gaze
 from pupilcloud import Api, ApiException
 from constants import *
 import requests
-import os
+import json
 from file_helper import unzip_and_move_to_parent #, extract_frames
 from frames_extractor import extract_frames, extract_depth_camera_frames
 
@@ -94,7 +94,6 @@ class recordingExporter:
             event_folder = os.path.join(self.export_folder, str(i))
             os.mkdir(event_folder)
             #add a csv file with the gaze data
-            #TODO: maybe we want this in a different format/ different location
             sub_df.to_csv(os.path.join(event_folder, "gaze_data.csv"), index = False)
             #add wearer information to the folder
             os.system("copy " + os.path.join(self.recording_folder, "wearer.json") + " " + event_folder)
@@ -105,7 +104,7 @@ class recordingExporter:
                 for camera_frame in camera_frames:
                     os.system("copy " + os.path.join(self.recording_folder, camera_folder, str(camera_frame) + ".png") + " " + os.path.join(event_folder, camera_folder))
                     
-    #TODO: this function would be used differently (not in the the class since it is not related to a specific recording))        
+    #TODO: (not used atm) this function would be used differently (not in the the class since it is not related to a specific recording))        
     def export_all_recordings_by_wearer_folder(self):
         #go through all the recordings in the recordings folder and look for wearer.json
         recordings = os.listdir(recordings_folder)
@@ -133,7 +132,6 @@ class recordingExporter:
                 event_folder = os.path.join(self.export_folder, user_id, recording, str(i))
                 os.mkdir(path = event_folder)
                 #add a csv file with the gaze data
-                #TODO: maybe we want this in a different format/ different location
                 sub_df.to_csv(os.path.join(event_folder, "gaze_data.csv"), index = False)
                 
                 for camera_folder, indices_name in zip(camera_names, indices_names):

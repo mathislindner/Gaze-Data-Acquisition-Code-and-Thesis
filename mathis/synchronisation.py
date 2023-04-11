@@ -9,11 +9,12 @@ from constants import *
 import json
 from file_helper import decode_timestamp, get_system_start_ts
 
+#returns the offset between the pupil labs time and the system time using the android logs command 
 def get_offset_from_log(recording_id):
     recording_folder = os.path.join(recordings_folder, str(recording_id))
     #get the start time of the recording
     system_time_start = get_system_start_ts(recording_id)
-    system_time_start = int(system_time_start) #FIXME I am not sure if the recording.begin event corresponds to what we want
+    system_time_start = int(system_time_start)
     #start_time_system = recording_info['system_start_time']
     event_df = pd.read_csv(os.path.join(recording_folder, 'events.csv'))
     pupil_labs_time = event_df[event_df['name'] == 'recording.begin']['timestamp [ns]'].values[0]
@@ -21,7 +22,7 @@ def get_offset_from_log(recording_id):
     offset = pupil_labs_time - system_time_start
     return offset
 
-
+#returns the offset between the pupil labs time and the system time using the local_synchronisation.json file which corresponds to the pupil labs calculated offset at the begining of the recording
 def get_offset_from_local_csv(recording_id):
     recording_folder = os.path.join(recordings_folder, str(recording_id))
     local_synchronisation_series = pd.read_json(os.path.join(recording_folder, 'local_synchronisation.json'), typ='series', convert_dates=False)
@@ -132,17 +133,18 @@ def correspond_cameras_and_gaze(recording_id):
 
     gaze_df = pd.read_csv(os.path.join(recording_folder, "gaze.csv"))
     gaze_timestamps = gaze_df.values[:, 2] / scale_factor
-    events_df = pd.read_csv(os.path.join(recording_folder, "events.csv")) #FIXME
+    events_df = pd.read_csv(os.path.join(recording_folder, "events.csv"))
     events_timestamps = events_df['timestamp [ns]'] / scale_factor
     imu_df = pd.read_csv(os.path.join(recording_folder, "imu.csv"))
     imu_timestamps = imu_df.values[:, 2] / scale_factor
-    depth_camera_df = pd.read_csv(os.path.join(recording_folder, "depth_camera.csv"))
-    depth_camera_timestamps = depth_camera_df["timestamps"]/scale_factor #FIXME check this one
+    #depth_camera_df = pd.read_csv(os.path.join(recording_folder, "depth_camera_timestamps.csv"))
+    #depth_camera_timestamps = depth_camera_df["timestamps"]/scale_factor
 
 
     left_timestamps = decode_timestamp(os.path.join(recording_folder, camera_names[0] + ".time")) / scale_factor
     right_timestamps = decode_timestamp(os.path.join(recording_folder, camera_names[1] + ".time")) / scale_factor
     world_timestamps = decode_timestamp(os.path.join(recording_folder, camera_names[2] + ".time")) / scale_factor
+    depth_camera_timestamps = decode_timestamp(os.path.join(recording_folder, "depth_camera_timestamps" + ".npy")) / scale_factor #FIXME: check this
 
     left_timestamps_rel = left_timestamps - gaze_timestamps[0]
     right_timestamps_rel = right_timestamps - gaze_timestamps[0]

@@ -6,6 +6,7 @@ from file_helper import decode_timestamp
 from constants import *
 import cv2
 import pyrealsense2 as rs
+import pandas as pd
 
 
 def convert_kwargs_to_cmd_line_args(kwargs):
@@ -120,15 +121,24 @@ def extract_frames(recording_id):
             print(f'ffmpeg: {num_extracted_frames}')
 
 
+#save the frames to png, save the timestamps to a csv file corresponding to the frame number
 def extract_depth_camera_frames(recording_id):
     recording_folder = os.path.join(recordings_folder, str(recording_id))
-    #make sure that timestamps are in ns and not ms
+    rgb_images_path = os.path.join(recording_folder, "rgb_image")
+    depth_images_path = os.path.join(recording_folder, "depth_image")
+
+    #check if the depth camera frames have already been extracted
+    if os.path.exists(rgb_images_path) and os.path.exists(depth_images_path):
+        print("depth camera frames already extracted")
+        return
+    
+    os.mkdir(rgb_images_path)
+    os.mkdir(depth_images_path)
+    
     pipeline = rs.pipeline()
     config = rs.config()
     config.enable_device_from_file(os.path.join(recording_folder, "realsensed435.bag"), repeat_playback=False)
     profile = pipeline.start(config)
-
-    #save the frames to png, save the timestamps to a csv file corresponding to the frame number
     i = 0
 
     timestamps = []
@@ -147,17 +157,17 @@ def extract_depth_camera_frames(recording_id):
             color_image = np.asanyarray(color_frame.get_data())
             depth_image = np.asanyarray(depth_frame.get_data())
 
-            cv2.imwrite(os.path.join(recording_folder, "rgb_image", str(i) + ".png"), color_image)
-            cv2.imwrite(os.path.join(recording_folder, "depth_image", str(i) + ".png"), depth_image)
+            cv2.imwrite(os.path.join(rgb_images_path, str(i) + ".png"), color_image)
+            cv2.imwrite(os.path.join(depth_images_path, str(i) + ".png"), depth_image)
             
-
             #add the timestamp to the list and convert from ms to ns
-            timestamps.append(frames.get_timestamp() * 1000)
+            timestamps.append(frames.get_timestamp())
             i += 1
 
-    #save the timestamps to a csv file
-    timestamps_df = pd.DataFrame(timestamps)
-    timestamps_df.to_csv(os.path.join(recording_folder, "depth_camera_timestamps.csv"), index=False)
+    #convert timestamps to ns and uint64
+    timestamps = np.array(timestamps* 1000000).astype(np.uint64)
+    #save the timestamps to a numpy array
+    np.save(os.path.join(recording_folder, "depth_camera_timestamps"), np.array(timestamps))
 
     #stop the pipeline
     pipeline.stop()
