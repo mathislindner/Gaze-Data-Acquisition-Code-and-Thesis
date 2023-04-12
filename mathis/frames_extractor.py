@@ -124,8 +124,8 @@ def extract_frames(recording_id):
 #save the frames to png, save the timestamps to a csv file corresponding to the frame number
 def extract_depth_camera_frames(recording_id):
     recording_folder = os.path.join(recordings_folder, str(recording_id))
-    rgb_images_path = os.path.join(recording_folder, "rgb_image")
-    depth_images_path = os.path.join(recording_folder, "depth_image")
+    rgb_images_path = os.path.join(recording_folder, "rgb_pngs")
+    depth_images_path = os.path.join(recording_folder, "depth_pngs")
 
     #check if the depth camera frames have already been extracted
     if os.path.exists(rgb_images_path) and os.path.exists(depth_images_path):
@@ -142,6 +142,7 @@ def extract_depth_camera_frames(recording_id):
     i = 0
 
     timestamps = []
+    depth_images_list = []
     #while the bag file is not finished
     while True:
         try:
@@ -159,17 +160,57 @@ def extract_depth_camera_frames(recording_id):
 
             cv2.imwrite(os.path.join(rgb_images_path, str(i) + ".png"), color_image)
             cv2.imwrite(os.path.join(depth_images_path, str(i) + ".png"), depth_image)
+            depth_images_list.append(depth_image)
             
             #add the timestamp to the list and convert from ms to ns
             timestamps.append(frames.get_timestamp())
             i += 1
-
-    #convert timestamps to ns and uint64
-    timestamps = np.array(timestamps* 1000000).astype(np.uint64)
+    #save the depth images to a npz
+    np.savez(os.path.join(recording_folder, "depth_array"), np.array(depth_images_list))
+    #convert timestamps to ns 
+    timestamps = [x * 1e6 for x in timestamps]
+    # convert timestamps to uint64
+    timestamps = np.array(timestamps).astype(np.uint64)
     #save the timestamps to a numpy array
     np.save(os.path.join(recording_folder, "depth_camera_timestamps"), np.array(timestamps))
 
     #stop the pipeline
     pipeline.stop()
 
-#extract_frames("82e52db9-1cac-495d-99dd-bebb51c393a0")
+#undistort world images according to the calibration parameters
+def undistort_world_camera(recording_id):
+    recording_folder = os.path.join(recordings_folder, str(recording_id))
+
+    distorted_images_path = os.path.join(recording_folder, camera_folders[2])
+    scene_camera_path = os.path.join(recording_folder, "scene_camera.json")
+    undistorted_images_path = os.path.join(recording_folder, camera_folders[2] + "_undistorted")
+
+    #read_json
+    with open(scene_camera_path) as f:
+        data = json.load(f)
+    #get the camera matrix and distortion coefficients
+    camera_matrix = np.array(data["camera_matrix"])
+    distortion_coefficients = np.array(data["dist_coefs"])
+
+    #check if the undistorted images have already been extracted
+    if os.path.exists(undistorted_images_path):
+        print("undistorted images already extracted")
+        return
+    
+    os.mkdir(undistorted_images_path)
+
+    #undistort the images
+    for image_path in os.listdir(distorted_images_path):
+        image = cv2.imread(os.path.join(distorted_images_path, image_path))
+        undistorted_image = cv2.undistort(image, camera_matrix, distortion_coefficients)
+        cv2.imwrite(os.path.join(undistorted_images_path, image_path), undistorted_image)
+    return
+    #undistort the gaze data
+    undistorted_points = cv2.undistortPoints(points.reshape(-1, 2), camera_matrix, 
+                                             distortion_coefficients)
+    example_points_undist = example_points_undist.reshape(-1, 2)
+    
+
+undistort_images("3026e32b-3e15-40a7-9a46-8e8512cdfe5c")
+#extract_depth_camera_frames("test")
+#extract_frames("3026e32b-3e15-40a7-9a46-8e8512cdfe5c")

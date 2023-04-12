@@ -6,7 +6,7 @@ from constants import *
 import requests
 import json
 from file_helper import unzip_and_move_to_parent #, extract_frames
-from frames_extractor import extract_frames, extract_depth_camera_frames
+from frames_extractor import extract_frames, extract_depth_camera_frames, undistort_world_camera
 
 #object to download process one recording
 class  recordingDownloader:
@@ -62,6 +62,7 @@ class recordingCurator:
         extract_frames(self.recording_id)
         extract_depth_camera_frames(self.recording_id)
         correspond_cameras_and_gaze(self.recording_id)
+        undistort_world_camera(self.recording_id)
         pass
 
 #Object that does the final exportation of the recording to the final folder (where we only keep the frames where the gaze is looking for 2 seconds...)
