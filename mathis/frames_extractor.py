@@ -139,14 +139,19 @@ def extract_depth_camera_frames(recording_id):
     config = rs.config()
     config.enable_device_from_file(os.path.join(recording_folder, "realsensed435.bag"), repeat_playback=False)
     profile = pipeline.start(config)
+    playback = profile.get_device().as_playback()
+    playback.set_real_time(False)
+    
     i = 0
 
     timestamps = []
     depth_images_list = []
     #while the bag file is not finished
+    j = 0
     while True:
         try:
             frames = pipeline.wait_for_frames()
+            playback.pause() #added this because else the frames are not saved correctly: https://stackoverflow.com/questions/58482414/frame-didnt-arrived-within-5000-while-reading-bag-file-pyrealsense2
         except:
             break
         color_frame = frames.get_color_frame()
@@ -165,6 +170,7 @@ def extract_depth_camera_frames(recording_id):
             #add the timestamp to the list and convert from ms to ns
             timestamps.append(frames.get_timestamp())
             i += 1
+            playback.resume()
     #save the depth images to a npz
     np.savez(os.path.join(recording_folder, "depth_array"), np.array(depth_images_list))
     #convert timestamps to ns 
@@ -172,8 +178,7 @@ def extract_depth_camera_frames(recording_id):
     # convert timestamps to uint64
     timestamps = np.array(timestamps).astype(np.uint64)
     #save the timestamps to a numpy array
-    np.save(os.path.join(recording_folder, "depth_camera_timestamps"), np.array(timestamps))
-
+    np.savez(os.path.join(recording_folder, "depth_camera_timestamps"), np.array(timestamps))
     #stop the pipeline
     pipeline.stop()
 
@@ -211,6 +216,6 @@ def undistort_world_camera(recording_id):
     example_points_undist = example_points_undist.reshape(-1, 2)
     
 
-undistort_images("3026e32b-3e15-40a7-9a46-8e8512cdfe5c")
-#extract_depth_camera_frames("test")
+#undistort_images("3026e32b-3e15-40a7-9a46-8e8512cdfe5c")
+extract_depth_camera_frames("test")
 #extract_frames("3026e32b-3e15-40a7-9a46-8e8512cdfe5c")
