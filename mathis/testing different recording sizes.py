@@ -16,8 +16,8 @@ def record_depth_and_rgb(rgb_size, depth_size, rec_time = 10):
 
     config = rs.config()
     config.enable_stream(rs.stream.depth, depth_size[0], depth_size[1], rs.format.z16, 30)
-    config.enable_stream(rs.stream.color, rgb_size[0], rgb_size[1], rs.format.bgr8, 15)
-    config.enable_record_to_file(os.path.join(path, "rec.bag"))
+    config.enable_stream(rs.stream.color, rgb_size[0], rgb_size[1], rs.format.bgr8, 30)
+    #config.enable_record_to_file(os.path.join(path, "rec.bag"))
     pipeline = rs.pipeline()
 
     # Start streaming
@@ -26,8 +26,10 @@ def record_depth_and_rgb(rgb_size, depth_size, rec_time = 10):
     depth_images = []
     #start timer
     start_time = time.time()
+    i = 0
     while time.time() - start_time < rec_time:
         frames = pipeline.wait_for_frames()
+        frame_number = frames.get_frame_number()
         depth_frame = frames.get_depth_frame()
         color_frame = frames.get_color_frame()
         if not depth_frame or not color_frame:
@@ -38,14 +40,17 @@ def record_depth_and_rgb(rgb_size, depth_size, rec_time = 10):
         #add depth image to list
         depth_images.append(depth_image)
         #save color image
-        cv2.imwrite(os.path.join(path, "color" + ".png"), color_image)
+        cv2.imwrite(os.path.join(path, "color" + str(i) + ".png"), color_image)
+        i += 1
+
     #convert depth images to numpy array
     depth_images = np.array(depth_images)
+    print(depth_images)
     #save depth images
-    np.save(os.path.join(path, "depth.npy"), depth_images)
+    np.savez(os.path.join(path, "depth"), depth_images)
     # Stop streaming
     pipeline.stop()
 
-#record_depth_and_rgb((640,480), (640,480), rec_time = 10)
-record_depth_and_rgb((1280,720), (640,480), rec_time = 10)
+record_depth_and_rgb((640,480), (640,480), rec_time = 10)
+#record_depth_and_rgb((1280,720), (640,480), rec_time = 10)
 #record_depth_and_rgb((1920,1080), (1280,720), rec_time = 10)
