@@ -124,16 +124,21 @@ def extract_frames(recording_id):
 #save the frames to png, save the timestamps to a csv file corresponding to the frame number
 def extract_depth_camera_frames(recording_id):
     recording_folder = os.path.join(recordings_folder, str(recording_id))
+    if not os.path.exists(os.path.join(recording_folder, "realsensed435.bag")):
+        print("no realsense bag file")
+        return
     rgb_images_path = os.path.join(recording_folder, "rgb_pngs")
     depth_images_path = os.path.join(recording_folder, "depth_pngs")
 
     #check if the depth camera frames have already been extracted
-    if os.path.exists(rgb_images_path) and os.path.exists(depth_images_path):
+    if os.path.exists(rgb_images_path) and os.path.exists(depth_images_path) and os.path.exists(os.path.join(recording_folder, "depth_camera_timestamps.npy")):
         print("depth camera frames already extracted")
         return
-    
-    os.mkdir(rgb_images_path)
-    os.mkdir(depth_images_path)
+    try:
+        os.mkdir(depth_images_path)
+        os.mkdir(rgb_images_path)
+    except:
+        print("could not create new folders for depth camera frames")
     
     pipeline = rs.pipeline()
     config = rs.config()
@@ -172,13 +177,14 @@ def extract_depth_camera_frames(recording_id):
             i += 1
             playback.resume()
     #save the depth images to a npz
-    np.savez(os.path.join(recording_folder, "depth_array"), np.array(depth_images_list))
+    np.savez_compressed(os.path.join(recording_folder, "depth_array"), np.array(depth_images_list))
     #convert timestamps to ns 
     timestamps = [x * 1e6 for x in timestamps]
     # convert timestamps to uint64
     timestamps = np.array(timestamps).astype(np.uint64)
+    timestamps.tofile(os.path.join(recording_folder, "depth_camera_timestamps.npy"))
     #save the timestamps to a numpy array
-    np.savez(os.path.join(recording_folder, "depth_camera_timestamps"), np.array(timestamps))
+    #np.save(os.path.join(recording_folder, "depth_camera_timestamps"), timestamps)
     #stop the pipeline
     pipeline.stop()
 
@@ -217,5 +223,5 @@ def undistort_world_camera(recording_id):
     
 
 #undistort_images("3026e32b-3e15-40a7-9a46-8e8512cdfe5c")
-extract_depth_camera_frames("test")
+#extract_depth_camera_frames("test")
 #extract_frames("3026e32b-3e15-40a7-9a46-8e8512cdfe5c")

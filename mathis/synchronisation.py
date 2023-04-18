@@ -33,11 +33,11 @@ def add_events_from_csv_to_df(recording_id, df):
     recording_folder = os.path.join(recordings_folder, str(recording_id))
     local_synchronisation_series = pd.read_json(os.path.join(recording_folder, 'local_synchronisation.json'), typ='series', convert_dates=False)
     events_series = local_synchronisation_series[local_synchronisation_series.index.str.startswith('Event: ')]
-    df['event_idx'] = None
+    df['events_idx'] = None
     #whenever the event time is met by the dataframe[timestamp [ns]] then add the event index to the event column for all events until the end of the dataframe
     for event in events_series.index:
         event_time = events_series[event]
-        df.loc[df['timestamp [ns]'] >= event_time, 'event_idx'] = event[-1]
+        df.loc[df['timestamp [ns]'] >= event_time, 'events_idx'] = event[-1]
 
     return df
 
@@ -144,7 +144,12 @@ def correspond_cameras_and_gaze(recording_id):
     left_timestamps = decode_timestamp(os.path.join(recording_folder, camera_names[0] + ".time")) / scale_factor
     right_timestamps = decode_timestamp(os.path.join(recording_folder, camera_names[1] + ".time")) / scale_factor
     world_timestamps = decode_timestamp(os.path.join(recording_folder, camera_names[2] + ".time")) / scale_factor
-    depth_camera_timestamps = decode_timestamp(os.path.join(recording_folder, "depth_camera_timestamps" + ".npy")) / scale_factor #FIXME: check this
+    
+    depth_camera_footage_bool = os.path.isfile(os.path.join(recording_folder, "depth_camera_timestamps" + ".npy"))
+    if depth_camera_footage_bool:
+        depth_camera_timestamps = decode_timestamp(os.path.join(recording_folder, "depth_camera_timestamps" + ".npy")) / scale_factor
+    else:
+        depth_camera_timestamps = left_timestamps
 
     left_timestamps_rel = left_timestamps - gaze_timestamps[0]
     right_timestamps_rel = right_timestamps - gaze_timestamps[0]
@@ -152,9 +157,14 @@ def correspond_cameras_and_gaze(recording_id):
     gaze_timestamps_rel = gaze_timestamps - gaze_timestamps[0]
     events_timestamps_rel = events_timestamps - gaze_timestamps[0]
     imu_timestamps_rel = imu_timestamps - gaze_timestamps[0]
-    depth_camera_timestamps_rel = depth_camera_timestamps - gaze_timestamps[0] +  get_offset_from_local_csv(recording_id) #FIXME Check if + or -
+    #to take care of the dummy timestamps
 
+    if depth_camera_footage_bool:
+        depth_camera_timestamps_rel = depth_camera_timestamps - gaze_timestamps[0] -  get_offset_from_local_csv(recording_id)/scale_factor #FIXME Check if + or -
+    else:
+        depth_camera_timestamps_rel = depth_camera_timestamps - gaze_timestamps[0]
 
+    print(gaze_timestamps_rel[0] - depth_camera_timestamps_rel[0])
 
     best_pairs_gaze_left = find_element_pairs(gaze_timestamps_rel, left_timestamps_rel)
     best_pairs_gaze_right = find_element_pairs(gaze_timestamps_rel, right_timestamps_rel)
@@ -202,7 +212,7 @@ def correspond_cameras_and_gaze(recording_id):
     gaze_df['events_idx'] = idx_g_l_r_w_i[:, 5]
     gaze_df['depth_camera_idx'] = idx_g_l_r_w_i[:, 6]
 
-    gaze_df["timestamp [ns]"] = gaze_df["timestamp [ns]"] - get_offset_from_local_csv(recording_id) #FIXME: check if - or +
+    gaze_df["timestamp [ns]"] = gaze_df["timestamp [ns]"] + get_offset_from_local_csv(recording_id)/scale_factor #FIXME: check if - or +
     gaze_df = add_events_from_csv_to_df(recording_id, gaze_df)
     gaze_df.to_csv(recording_folder + "/full_df.csv", index=False)
 

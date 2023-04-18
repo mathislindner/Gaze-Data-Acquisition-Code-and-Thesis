@@ -38,7 +38,9 @@ def curate_all_recordings_multiprocessing():
     #for each folder check if curated
     for recording in recordings:
         recording = os.path.join(recordings_folder, recording)
-        if not os.path.exists(os.path.join(recording,"PI_left_v1_ps1","0" + ".png")): #TODO: make this prettiermaybe? or create metadata file that says if curated or not
+        #cannot synchronize if there is no local_synchronization file!
+        local_synchronization_file = os.path.join(recording, "local_synchronisation.json")
+        if not os.path.exists(os.path.join(recording,"PI_left_v1_ps1","0" + ".png")) and os.path.exists(local_synchronization_file): #TODO: make this prettiermaybe? or create metadata file that says if curated or not
             recording_id = recording.split("/")[-1]
             to_curate.append(recording_id)
     pool = multiprocessing.Pool(processes=4)
