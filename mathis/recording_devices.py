@@ -36,7 +36,7 @@ class PupilCamera():
         self.recording_id = None
 
     def start_recording(self):
-        self.recording_id = self.device.recording_start()()
+        self.recording_id = self.device.recording_start()
         self.save_offset_and_start_time(time_ns())
         return self.recording_id
     

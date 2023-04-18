@@ -15,13 +15,17 @@ class acquisitionLogic():
         self.recording_id = "temp"
 
         #TODO:change back to PupilCamera
-        #self.pupil_camera = PupilCamera(ip, port)
-        self.pupil_camera = PupilCameraTest()
+        self.pupil_camera = PupilCamera(ip, port)
+        #self.pupil_camera = PupilCameraTest()
         self.depth_and_rgb_cameras = depthAndRgbCameras()
 
         self.keyboard_listener = keyboard.Listener(on_press=self.on_press)
         self.keyboard_listener.start()
-        self.keyboard_listener.join()
+        #self.keyboard_listener.join()
+        print("to start recording press right arrow")
+        print("to stop recording press left arrow")
+        print("to trigger event press space")
+        print("to exit press esc")
 
     def on_press(self, key):
         if key == keyboard.Key.right:
@@ -38,7 +42,11 @@ class acquisitionLogic():
         if key == keyboard.Key.esc:
             if self.recording_bool:
                 print("warning: recording is still on")
-            exit()
+            else:
+                # stop the listener
+                self.keyboard_listener.stop()
+                print("exiting")
+                os._exit(1)
 
 
     def start_recording_all_devices(self):
@@ -84,6 +92,8 @@ class acquisitionLogic():
 
 
 if __name__ == "__main__":
-    acquisition_logic = acquisitionLogic(ip = "0.0.0.0",port = "8080")
+    ip_address = "10.5.56.134"
+    port = "8080"
+    acquisition_logic = acquisitionLogic(ip_address, port)
     #while True:
     #    pass
