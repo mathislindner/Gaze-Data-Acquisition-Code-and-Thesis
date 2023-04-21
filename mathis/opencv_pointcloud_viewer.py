@@ -83,9 +83,9 @@ import os
 from constants import *
 recording_id = "test"
 recording_folder = os.path.join(recordings_folder, str(recording_id))
-#config.enable_stream(rs.stream.depth, rs.format.z16, 30)
-#config.enable_stream(rs.stream.color, rs.format.bgr8, 30)
-config.enable_device_from_file(os.path.join(recording_folder, "realsensed435.bag"), repeat_playback=False)
+config.enable_stream(rs.stream.depth, rs.format.z16, 30)
+config.enable_stream(rs.stream.color, rs.format.bgr8, 30)
+#config.enable_device_from_file(os.path.join(recording_folder, "realsensed435.bag"), repeat_playback=False)
 # Start streaming
 pipeline.start(config)
 
