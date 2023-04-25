@@ -32,6 +32,10 @@ def get_system_start_ts(recording_id):
             return int(line.split(" ")[-1])
     print("Could not find event {} in android.log".format(event_name))
 
+def copy_frames_to_new_folder(from_path, to_path, step=1):
+    for i, file in enumerate(os.listdir(from_path)):
+        if i % step == 0:
+            move(os.path.join(from_path, file), to_path)
 """
 def get_start_time_from_text(recording_id, text):
     get the start time of the recording  of the event from the android log
