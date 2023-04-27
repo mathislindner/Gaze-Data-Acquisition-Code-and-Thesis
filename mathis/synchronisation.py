@@ -97,7 +97,7 @@ def find_element_pairs(seq_1, seq_2):
             if (i_2+1) > (seq_2_len-1):
                 break 
             # Check ascending order assumption
-            assert seq_2[i_2+1] > seq_2[i_2]
+            assert seq_2[i_2+1] >= seq_2[i_2]
             # Increment seq_2 pointer
             i_2 += 1
             val_2 = seq_2[i_2]
@@ -132,11 +132,11 @@ def correspond_cameras_and_gaze(recording_id):
     w_res = 1/30
 
     gaze_df = pd.read_csv(os.path.join(recording_folder, "gaze.csv"))
-    gaze_timestamps = gaze_df.values[:, 2] / scale_factor
+    gaze_timestamps = gaze_df["timestamp [ns]"].values / scale_factor
     events_df = pd.read_csv(os.path.join(recording_folder, "events.csv"))
     events_timestamps = events_df['timestamp [ns]'] / scale_factor
     imu_df = pd.read_csv(os.path.join(recording_folder, "imu.csv"))
-    imu_timestamps = imu_df.values[:, 2] / scale_factor
+    imu_timestamps = imu_df["timestamp [ns]"].values / scale_factor
     #depth_camera_df = pd.read_csv(os.path.join(recording_folder, "depth_camera_timestamps.csv"))
     #depth_camera_timestamps = depth_camera_df["timestamps"]/scale_factor
 
@@ -163,8 +163,6 @@ def correspond_cameras_and_gaze(recording_id):
         depth_camera_timestamps_rel = depth_camera_timestamps - gaze_timestamps[0] -  get_offset_from_local_csv(recording_id)/scale_factor #FIXME Check if + or -
     else:
         depth_camera_timestamps_rel = depth_camera_timestamps - gaze_timestamps[0]
-
-    print(gaze_timestamps_rel[0] - depth_camera_timestamps_rel[0])
 
     best_pairs_gaze_left = find_element_pairs(gaze_timestamps_rel, left_timestamps_rel)
     best_pairs_gaze_right = find_element_pairs(gaze_timestamps_rel, right_timestamps_rel)
@@ -216,5 +214,5 @@ def correspond_cameras_and_gaze(recording_id):
     gaze_df = add_events_from_csv_to_df(recording_id, gaze_df)
     gaze_df.to_csv(recording_folder + "/full_df.csv", index=False)
 
-#correspond_cameras_and_gaze("be0f413f-0bdd-4053-a1d4-c03efd57e532")
+#correspond_cameras_and_gaze("50bd29b9-0ef2-425c-8f78-b9275ce3f32f")
 #print(get_offset("82e52db9-1cac-495d-99dd-bebb51c393a0"))

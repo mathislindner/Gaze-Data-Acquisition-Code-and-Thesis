@@ -64,8 +64,7 @@ class recordingCurator:
         correspond_cameras_and_gaze(self.recording_id)
         undistort_world_camera(self.recording_id)
         #run COLMAP on the world camera frames
-        run_colmap(self.recording_id)
-        pass
+        #run_colmap(self.recording_id)
 
 #Object that does the final exportation of the recording to the final folder (where we only keep the frames where the gaze is looking for 2 seconds...)
 class recordingExporter:

@@ -195,7 +195,6 @@ def undistort_world_camera(recording_id):
     distorted_images_path = os.path.join(recording_folder, camera_folders[2])
     scene_camera_path = os.path.join(recording_folder, "scene_camera.json")
     undistorted_images_path = os.path.join(recording_folder, camera_folders[2] + "_undistorted")
-
     #read_json
     with open(scene_camera_path) as f:
         data = json.load(f)
