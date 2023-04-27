@@ -6,7 +6,8 @@ import time
 def run_colmap(recording_id):
     pass
     recording_folder = os.path.join(recordings_folder,str(recording_id))
-    undistorted_world_camera_folder = os.path.join(recording_folder, "undistorted_world_camera")
+    undistorted_world_camera_folder = os.path.join(recording_folder, "PI_world_v1_ps1_undistorted")
+
     colmap_ws_folder = os.path.join(recording_folder, "colmap_ws")
     colmap_ws_images_folder = os.path.join(colmap_ws_folder, "images")
     colmap_log_dir = os.path.join(colmap_ws_folder, "log")
@@ -21,10 +22,12 @@ def run_colmap(recording_id):
 
 
     #copy the frames to the colmap workspace folder 3 frames per second
-    copy_frames_to_new_folder(undistorted_world_camera_folder, colmap_ws_folder, step = 10)
+    copy_frames_to_new_folder(undistorted_world_camera_folder, colmap_ws_images_folder, step = 10)
 
     #create batch file to run colmap on cluster
     world_batch_file_path = os.path.join(colmap_ws_folder, "run_colmap_on_world.sh")
+
+def create_colmap_batch_file(recording_id, colmap_ws_folder, colmap_ws_images_folder, colmap_log_dir):
     with open(world_batch_file_path, "w") as batch_file:
         batch_file.write("#!/bin/bash")
         batch_file.write("#SBATCH --job-name=colmap {}".format(recording_id))
@@ -34,10 +37,13 @@ def run_colmap(recording_id):
         batch_file.write("colmap automatic_reconstructor --workspace_path " + colmap_ws_folder + " --image_path " + colmap_ws_images_folder)
         #FIXME: add the rest of the parameters (same camera model, video sequence, etc.)
     #run colmap on the frames with sbatch
-    os.system("sbatch " + world_batch_file_path)
+
+    #TODO: check if colmap is already running (check by job name)
+    #os.system("sbatch " + world_batch_file_path)
     
     #TODO: wait until colmap is done (check by job id)
     pass
+
     #once once colmap is done, try to locate the depth camera from there
     #https://colmap.github.io/faq.html#register-localize-new-images-into-an-existing-reconstruction
     depth_batch_file = os.path.join(colmap_ws_folder, "run_colmap_on_depth.sh")

@@ -1,7 +1,7 @@
 import zipfile
 import io 
 import os
-from shutil import move
+from shutil import copy,move
 import datetime
 from constants import *
 import numpy as np
@@ -33,9 +33,12 @@ def get_system_start_ts(recording_id):
     print("Could not find event {} in android.log".format(event_name))
 
 def copy_frames_to_new_folder(from_path, to_path, step=1):
-    for i, file in enumerate(os.listdir(from_path)):
-        if i % step == 0:
-            move(os.path.join(from_path, file), to_path)
+    for file in os.listdir(from_path):
+        if int(file.split(".")[0]) % step == 0:
+            try:
+                copy(os.path.join(from_path, file), to_path)
+            except:
+                pass
 """
 def get_start_time_from_text(recording_id, text):
     get the start time of the recording  of the event from the android log
