@@ -1,7 +1,6 @@
 #*/colmap_testing/*
 *.db
 todo
-*/config.yaml
 mathis/recordings/
 mathis/exports/
 # Byte-compiled / optimized / DLL files
