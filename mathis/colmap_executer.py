@@ -2,58 +2,59 @@ from constants import *
 import os 
 from file_helper import copy_frames_to_new_folder
 import time
+import shutil
+import subprocess
 
 def run_colmap(recording_id):
-    pass
+    current_working_dir = os.getcwd()
+    runcolmap_batch_file = os.path.join(current_working_dir, "run_colmap.sh")
+    
     recording_folder = os.path.join(recordings_folder,str(recording_id))
     undistorted_world_camera_folder = os.path.join(recording_folder, "PI_world_v1_ps1_undistorted")
+    depth_camera_folder = os.path.join(recording_folder, "rgb_pngs")
 
     colmap_ws_folder = os.path.join(recording_folder, "colmap_ws")
     colmap_ws_images_folder = os.path.join(colmap_ws_folder, "images")
+    colmap_world_camera_folder = os.path.join(colmap_ws_images_folder, "world_camera")
+    colmap_depth_camera_folder = os.path.join(colmap_ws_images_folder, "depth_camera")
     colmap_log_dir = os.path.join(colmap_ws_folder, "log")
 
     #create the colmap workspace folder
+    #TODO: create 2 subfolders in images, one for the world camera and one for the depth camera
     if not os.path.exists(colmap_ws_folder):
         os.makedirs(colmap_ws_folder)
     if not os.path.exists(colmap_ws_images_folder):
         os.makedirs(colmap_ws_images_folder)
     if not os.path.exists(colmap_log_dir):
         os.makedirs(colmap_log_dir)
+    if not os.path.exists(colmap_world_camera_folder):
+        os.makedirs(colmap_world_camera_folder)
+    if not os.path.exists(colmap_depth_camera_folder):
+        os.makedirs(colmap_depth_camera_folder)
 
 
-    #copy the frames to the colmap workspace folder 3 frames per second
+    #copy the world images to the colmap workspace folder 3 frames per second
     copy_frames_to_new_folder(undistorted_world_camera_folder, colmap_ws_images_folder, step = 10)
 
-    #create batch file to run colmap on cluster
-    world_batch_file_path = os.path.join(colmap_ws_folder, "run_colmap_on_world.sh")
-
-def create_colmap_batch_file(recording_id, colmap_ws_folder, colmap_ws_images_folder, colmap_log_dir):
-    with open(world_batch_file_path, "w") as batch_file:
-        batch_file.write("#!/bin/bash")
-        batch_file.write("#SBATCH --job-name=colmap {}".format(recording_id))
-        batch_file.write("#SBATCH --output={}%j.out".format(colmap_log_dir))
-        batch_file.write("#SBATCH --gres=gpu:1")
-        batch_file.write("#SBATCH --mem=32G")
-        batch_file.write("colmap automatic_reconstructor --workspace_path " + colmap_ws_folder + " --image_path " + colmap_ws_images_folder)
-        #FIXME: add the rest of the parameters (same camera model, video sequence, etc.)
-    #run colmap on the frames with sbatch
-
-    #TODO: check if colmap is already running (check by job name)
-    #os.system("sbatch " + world_batch_file_path)
+    #copy one depth image to the colmap workspace folder (3secs after recording start)
+    shutil.copy(os.path.join(depth_camera_folder, "90.png"), colmap_depth_camera_folder)
+    #rename the depth image to depth_rgb.png to not have the same name as the world camera images
+    os.rename(os.path.join(colmap_depth_camera_folder, "90.png"), os.path.join(colmap_depth_camera_folder, "depth_rgb.png"))
     
-    #TODO: wait until colmap is done (check by job id)
-    pass
+    #execute bash script with sbatch command
+    #FIXME make sure executed in the right folder, somehow can t pass runcolmap_batch_file as argument (removes backslashes)
+    os.system("sbatch" + " " + "run_colmap.sh" + " " + recording_folder)
 
-    #once once colmap is done, try to locate the depth camera from there
-    #https://colmap.github.io/faq.html#register-localize-new-images-into-an-existing-reconstruction
-    depth_batch_file = os.path.join(colmap_ws_folder, "run_colmap_on_depth.sh")
-    with open(depth_batch_file, "w") as batch_file:
-        batch_file.write("#!/bin/bash")
-        batch_file.write("#SBATCH --job-name=colmap {}".format(recording_id))
-        batch_file.write("#SBATCH --output={}%j.out".format(colmap_log_dir))
-        batch_file.write("#SBATCH --gres=gpu:1")
-        batch_file.write("#SBATCH --mem=8G")
-
-        batch_file.write("colmap feature_extractor --database_path $PROJECT_PATH/database.db --image_path $PROJECT_PATH/images --image_list_path /path/to/image-list.txt")
-        batch_file.write("colmap vocab_tree_matcher --database_path $PROJECT_PATH/database.db --VocabTreeMatching.vocab_tree_path /path/to/vocab-tree.bin -VocabTreeMatching.match_list_path /path/to/image-list.txt")
-        batch_file.write("colmap image_registrator --database_path $PROJECT_PATH/database.db --input_path /path/to/existing-model --output_path /path/to/model-with-new-images ")
+def convert_vectors_to_true_scale(recording_id):
+    recording_folder = os.path.join(recordings_folder,str(recording_id))
+    colmap_ws_folder = os.path.join(recording_folder, "colmap_ws")
+    #TODO: verify that the colmap execution was successful
+    if not os.path.exists(os.path.join(colmap_ws_folder, "sparse/0/images.bin")):
+        print("Colmap execution was not successful, aborting")
+        return
+    
+    #import depth matrix
+    #find a clear spot in the matrix
+    #find the corresponding depth point from colmap
+    #calculate the scale factor thanks to rgb image
+    #convert all the points/cameras/images to true scale
