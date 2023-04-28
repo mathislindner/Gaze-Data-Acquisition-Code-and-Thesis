@@ -1,11 +1,16 @@
 #!/bin/bash
 #SBATCH --output=/scratch_net/snapo/mlindner/docs/test_cluster/f5b09068-d395-493c-80e6-7eb0cbb6478a/colmap_ws/log/%j.out
-#SBATCH --gres=gpu:2
+#SBATCH --gres=gpu:1
 #SBATCH --mem=32G
 
+#first argument should be the recording folder
+recordingfolder=$1
 
-WS_PATH=/scratch_net/snapo/mlindner/docs/test_cluster/f5b09068-d395-493c-80e6-7eb0cbb6478a/colmap_ws
+WS_PATH=$recordingfolder/colmap_ws
 DATASET_PATH=$WS_PATH/dataset
+
+echo $WS_PATH
+echo $DATASET_PATH
 
 colmap feature_extractor \
    --database_path $DATASET_PATH/database.db \
