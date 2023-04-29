@@ -11,11 +11,12 @@ def run_colmap(recording_id):
     
     recording_folder = os.path.join(recordings_folder,str(recording_id))
     undistorted_world_camera_folder = os.path.join(recording_folder, "PI_world_v1_ps1_undistorted")
+    distorted_world_camera_folder = os.path.join(recording_folder, "PI_world_v1_ps1")
     depth_camera_folder = os.path.join(recording_folder, "rgb_pngs")
-
     colmap_ws_folder = os.path.join(recording_folder, "colmap_ws")
     colmap_ws_images_folder = os.path.join(colmap_ws_folder, "images")
-    colmap_world_camera_folder = os.path.join(colmap_ws_images_folder, "world_camera")
+    colmap_world_camera_folder_undistorted = os.path.join(colmap_ws_images_folder, "world_camera_undistorted")
+    colmap_world_camera_folder_distorted = os.path.join(colmap_ws_images_folder, "world_camera_distorted")
     colmap_depth_camera_folder = os.path.join(colmap_ws_images_folder, "depth_camera")
     colmap_log_dir = os.path.join(colmap_ws_folder, "log")
 
@@ -27,14 +28,19 @@ def run_colmap(recording_id):
         os.makedirs(colmap_ws_images_folder)
     if not os.path.exists(colmap_log_dir):
         os.makedirs(colmap_log_dir)
-    if not os.path.exists(colmap_world_camera_folder):
-        os.makedirs(colmap_world_camera_folder)
+    if not os.path.exists(colmap_world_camera_folder_distorted):
+        os.makedirs(colmap_world_camera_folder_undistorted)
+    if not os.path.exists(colmap_world_camera_folder_distorted):
+        os.makedirs(colmap_world_camera_folder_distorted)
     if not os.path.exists(colmap_depth_camera_folder):
         os.makedirs(colmap_depth_camera_folder)
 
 
     #copy the world images to the colmap workspace folder 3 frames per second
-    copy_frames_to_new_folder(undistorted_world_camera_folder, colmap_ws_images_folder, step = 10)
+    copy_frames_to_new_folder(undistorted_world_camera_folder, colmap_world_camera_folder_undistorted, step = 10)
+    #copy distorted images to new folder
+    copy_frames_to_new_folder(distorted_world_camera_folder, colmap_world_camera_folder_distorted, step = 10)
+    #copy_frames_to_new_folder(world_camera_folder, colmap_ws_images_folder, step = 10)
 
     #copy one depth image to the colmap workspace folder (3secs after recording start)
     shutil.copy(os.path.join(depth_camera_folder, "90.png"), colmap_depth_camera_folder)
