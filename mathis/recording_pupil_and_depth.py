@@ -92,6 +92,7 @@ class acquisitionLogic():
 
 
 if __name__ == "__main__":
+    #ip_address = "plip.ee.ethz.ch"
     ip_address = "10.5.56.134"
     port = "8080"
     acquisition_logic = acquisitionLogic(ip_address, port)

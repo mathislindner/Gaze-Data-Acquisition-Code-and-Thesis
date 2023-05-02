@@ -30,8 +30,12 @@ class depthAndRgbCameras():
 
 class PupilCamera():
     def __init__(self, ip, port):
-        self.device = Device(address = ip, port = port)
-        assert self.device is not None, "No device found"
+        try:
+            print('connecting to device')
+            self.device = Device(address = ip, port = port)
+        except:
+            raise Exception("No device found")
+            
         print("Device found!")
         self.recording_id = None
 
