@@ -125,6 +125,10 @@ def find_element_pairs(seq_1, seq_2):
 #create a csv file that pairs the gaze timestamps with the world camera, left camera and right eye camera frames.
 #
 def correspond_cameras_and_gaze(recording_id):
+    #check if local synchronisation file exists
+    if not os.path.exists(os.path.join(recordings_folder, str(recording_id), 'local_synchronisation.json')):
+        print("local synchronisation file does not exist for recording " + str(recording_id))
+        return
     recording_folder = recordings_folder + recording_id + "/"
     print("correspond camera and gaze folder" + recording_folder)
     scale_factor = 10**9

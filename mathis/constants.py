@@ -17,5 +17,7 @@ elif username == 'Mathis':
 elif username == 'mathi':
     recordings_folder = "C:/Users/mathi/Documents/GitHub/gaze_data_acquisition/mathis/recordings/"
     exports_folder = "C:/Users/mathi/Documents/GitHub/gaze_data_acquisition/mathis/exports/"
+elif username == "mlindner":
+    recordings_folder = "/scratch_net/snapo/mlindner/docs/gaze_data_acquisition/mathis/recordings"
 else:
     raise AssertionError
