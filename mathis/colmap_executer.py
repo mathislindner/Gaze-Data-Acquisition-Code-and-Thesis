@@ -10,11 +10,14 @@ def run_colmap(recording_id):
     runcolmap_batch_file = os.path.join(current_working_dir, "run_colmap.sh")
     
     recording_folder = os.path.join(recordings_folder,str(recording_id))
+
     undistorted_world_camera_folder = os.path.join(recording_folder, "PI_world_v1_ps1_undistorted")
     distorted_world_camera_folder = os.path.join(recording_folder, "PI_world_v1_ps1")
     depth_camera_folder = os.path.join(recording_folder, "rgb_pngs")
+
     colmap_ws_folder = os.path.join(recording_folder, "colmap_ws")
-    colmap_ws_images_folder = os.path.join(colmap_ws_folder, "images")
+    colmap_dataset_folder = os.path.join(colmap_ws_folder, "dataset")
+    colmap_ws_images_folder = os.path.join(colmap_dataset_folder, "images")
     colmap_world_camera_folder_undistorted = os.path.join(colmap_ws_images_folder, "world_camera_undistorted")
     colmap_world_camera_folder_distorted = os.path.join(colmap_ws_images_folder, "world_camera_distorted")
     colmap_depth_camera_folder = os.path.join(colmap_ws_images_folder, "depth_camera")
@@ -49,7 +52,9 @@ def run_colmap(recording_id):
     
     #execute bash script with sbatch command
     #FIXME make sure executed in the right folder, somehow can t pass runcolmap_batch_file as argument (removes backslashes)
-    os.system("sbatch" + " " + "run_colmap.sh" + " " + recording_folder)
+    #os.system("sbatch" + " " + "run_colmap.sh" + " " + recording_folder)
+
+run_colmap("ff0acdab-123d-41d8-bfd6-b641f99fc8eb")
 
 def convert_vectors_to_true_scale(recording_id):
     recording_folder = os.path.join(recordings_folder,str(recording_id))
