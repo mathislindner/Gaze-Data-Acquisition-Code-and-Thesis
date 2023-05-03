@@ -2,10 +2,12 @@ import os
 import pandas as pd
 from synchronisation import correspond_cameras_and_gaze
 from pupilcloud import Api, ApiException
+import io
 from constants import *
 import requests
 import json
-from file_helper import unzip_and_move_to_parent #, extract_frames
+import zipfile
+from file_helper import move_subfolder_content_to_parent #, extract_frames
 from frames_extractor import extract_frames, extract_depth_camera_frames, undistort_world_camera
 from colmap_executer import run_colmap
 #object to download process one recording
@@ -23,27 +25,31 @@ class  recordingDownloader:
             print("Recording already downloaded")
             return
         #TODO: check if recording has been processed in the pupil cloud
-        self.download_videos()
-        self.download_timeseries()
+        downloads_path = os.path.join(self.recording_folder, 'downloads')
+        self.download_videos(downloads_path)
+        self.download_timeseries(downloads_path)
+        #move files to parent of parent folder
+        move_subfolder_content_to_parent(downloads_path)
 
     #download and extract recording by id  
-    def download_videos(self):
+    def download_videos(self, downloads_path):
         # Download recording files as a zip file in memory
         try:
             response = self.api.download_recording_zip(self.recording_id, _preload_content=False)
-
-            unzip_and_move_to_parent(response.read(), self.recording_folder)
+            z = zipfile.ZipFile(io.BytesIO(response.read()))
+            z.extractall(downloads_path)
         except ApiException as e:
             print("Exception when calling RecordingsApi->download_recording_zip: %s\n" % e)
 
     #unfortunately, the timeseries data is not available in the pupil cloud api, so we have to make it through a request
-    def download_timeseries(self):
+    def download_timeseries(self, downloads_path):
         timeseries_data_link = "https://api.cloud.pupil-labs.com/v2/workspaces/{}/recordings:raw-data-export?ids=".replace("{}", self.workspace_id)
         try :
             response = requests.get(url = timeseries_data_link  + str(self.recording_id), headers =  {"api-key": self.api_key}, stream=True)
         except:
             print("couldn t get timeseries data")
-        unzip_and_move_to_parent(response.content, self.recording_folder)
+        z = zipfile.ZipFile(io.BytesIO(response.content))
+        z.extractall(downloads_path)
 
 class recordingCurator:
     def __init__(self, recording_id):

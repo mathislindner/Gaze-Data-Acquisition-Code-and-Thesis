@@ -129,7 +129,7 @@ def correspond_cameras_and_gaze(recording_id):
     if not os.path.exists(os.path.join(recordings_folder, str(recording_id), 'local_synchronisation.json')):
         print("local synchronisation file does not exist for recording " + str(recording_id))
         return
-    recording_folder = recordings_folder + recording_id + "/"
+    recording_folder = os.path.join(recordings_folder, recording_id)
     print("correspond camera and gaze folder" + recording_folder)
     scale_factor = 10**9
     l_r_res = 1/200

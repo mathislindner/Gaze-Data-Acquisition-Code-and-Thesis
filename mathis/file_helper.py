@@ -1,8 +1,9 @@
 import zipfile
 import io 
 import os
-from shutil import copy,move
+from shutil import copy,move,rmtree
 import datetime
+import glob
 from constants import *
 import numpy as np
 
@@ -10,16 +11,20 @@ def decode_timestamp(timestamp_path):
     ts = np.fromfile(timestamp_path, dtype=np.uint64)
     return ts
 
-def unzip_and_move_to_parent(response, parent_folder):
-    z = zipfile.ZipFile(io.BytesIO(response))
-    z.extractall(parent_folder)
-    subfolder_name = os.listdir(parent_folder + "/")[0]
+def move_subfolder_content_to_parent(downloads_path):
+    parent_path = os.path.dirname(downloads_path)
+    #get subfolder name
+    for files in os.listdir(downloads_path):
+        if os.path.isdir(os.path.join(downloads_path, files)):
+            subfolder_name = files
+    subfolder_files_names = os.listdir(os.path.join(downloads_path, subfolder_name))
     #TODO: this implementation does not work: it creates too many / in the path
     #subfolder_name = z.filelist[0].filename.split(os.sep)[0]
     #move all files to parent folder and delete folder
-    for filename in os.listdir(os.path.join(parent_folder, subfolder_name)):
-        move(os.path.join(parent_folder, subfolder_name, filename), os.path.join(parent_folder, filename))
-    os.rmdir(os.path.join(parent_folder, subfolder_name))
+    for filename in subfolder_files_names:
+        move(os.path.join(downloads_path, subfolder_name, filename), os.path.join(parent_path, filename))
+    #delete subfolder using shutil.rmtree (os.rmdir only works for empty folders)
+    rmtree(downloads_path)
 
 def get_system_start_ts(recording_id):
     event_name = "manual_clock_offset_correction"
