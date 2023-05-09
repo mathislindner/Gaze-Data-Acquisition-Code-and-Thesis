@@ -1,10 +1,7 @@
-from colmap_testing.colmap_helpers import read_write_model
 import os
-import cv2
 import numpy as np
 from constants import *
 import open3d as o3d
-import plotly
 
 recording_id = "ff0acdab-123d-41d8-bfd6-b641f99fc8eb"
 recording_path = os.path.join(recordings_folder, recording_id)
