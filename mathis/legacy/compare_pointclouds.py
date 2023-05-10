@@ -1,6 +1,7 @@
 import os
 import numpy as np
 from constants import *
+import pandas as pd
 import open3d as o3d
 
 recording_id = "ff0acdab-123d-41d8-bfd6-b641f99fc8eb"
@@ -55,5 +56,5 @@ print("pointclouds after registration")
 print(pointcloud_colmap)
 print(pointcloud_depth_camera)
 
-o3d.visualization.draw_plotly([pointcloud_colmap, pointcloud_depth_camera], width=1920, height=1080)
-
+#o3d.visualization.draw_plotly([pointcloud_colmap, pointcloud_depth_camera], width=1920, height=1080)
+o3d.visualization.draw_plotly([pointcloud_colmap], width=1920, height=1080)
