@@ -22,7 +22,7 @@ def get_colmap_dense_model(recording_path):
 def get_depth_distances_array(recording_path):
     depth_camera_distances = np.load(os.path.join(recording_path, "depth_array.npz"))
     file_name = depth_camera_distances.files[0]
-    return depth_camera_distances[file_name][90] #depth_camera_distances[file_name][90] is the depth array of the 90th frame
+    return depth_camera_distances[file_name][95] #depth_camera_distances[file_name][95] is the depth array of the 90th frame
 
 def get_pointcloud_o3d(points_3d, colors):
     pointcloud = o3d.geometry.PointCloud()
@@ -98,8 +98,6 @@ def transform_pointcloud(pointcloud, R, t, scale):
     pointcloud = np.add(pointcloud, t)
     pointcloud = pointcloud * scale
 
-    
-
 
     #mirror on x,y plane
     #
@@ -138,6 +136,26 @@ def get_transformed_colmap_as_o3d(colmap_cameras, colmap_images, colmap_points, 
     o3d_pointcloud.colors = o3d.utility.Vector3dVector(colmap_rgb_colors)
     return o3d_pointcloud
 
+#returns the transformed colmap pointcloud and colors as o3d pointcloud
+def get_transformed_colmap_ply_as_o3d(colmap_cameras, colmap_images, colmap_points, scale):
+    #colmap_point_ids = list(colmap_points.keys())
+    colmap_fused_ply = o3d.io.read_point_cloud(os.path.join(recording_path, 'colmap_ws', 'automatic_recontructor','dense','0',"fused.ply"))
+    colmap_xyz = np.asarray(colmap_fused_ply.points)
+    colmap_rgb_colors = np.asarray(colmap_fused_ply.colors)
+
+    #colmap_xyz = np.array([colmap_points[point_id].xyz for point_id in colmap_point_ids])
+    #colmap_rgb_colors = np.array([colmap_points[point_id].rgb for point_id in colmap_point_ids])
+    rotation, translation = get_rotation_and_translation_matrix(colmap_cameras, colmap_images)
+    transformed_colmap_points = transform_pointcloud(colmap_xyz, rotation, translation, scale)
+
+    #colmap_camera_point_xyz = get_colmap_depth_image(colmap_images).tvec
+    #colmap_camera_point_transformed = transform_pointcloud(colmap_camera_point_xyz, rotation, translation, scale)
+
+    o3d_pointcloud = o3d.geometry.PointCloud()
+    o3d_pointcloud.points = o3d.utility.Vector3dVector(transformed_colmap_points)
+    o3d_pointcloud.colors = o3d.utility.Vector3dVector(colmap_rgb_colors)
+    return o3d_pointcloud
+
 def get_depth_camera_pointcloud_as_o3d(recording_path, nr_points=50000):
     path = os.path.join(recording_path,"meshed_depth_camera.ply")
     mesh = o3d.io.read_triangle_mesh(path)
@@ -147,7 +165,8 @@ def get_depth_camera_pointcloud_as_o3d(recording_path, nr_points=50000):
 depth_pointcloud = get_depth_camera_pointcloud_as_o3d(recording_path)
 sparse_camera_pointcloud = get_transformed_colmap_as_o3d(sparse_cameras, sparse_images, sparse_points, sparse_scale)
 dense_camera_pointcloud = get_transformed_colmap_as_o3d(dense_cameras, dense_images, dense_points, dense_scale)
-
+dense_camera_ply_pointcloud = get_transformed_colmap_ply_as_o3d(dense_cameras, dense_images, dense_points, dense_scale).voxel_down_sample(voxel_size=0.05)
 
 o3d.visualization.draw_plotly([depth_pointcloud, dense_camera_pointcloud],  width=1920, height=1080)
 o3d.visualization.draw_plotly([depth_pointcloud, sparse_camera_pointcloud],  width=1920, height=1080)
+o3d.visualization.draw_plotly([depth_pointcloud, dense_camera_ply_pointcloud],  width=1920, height=1080)
