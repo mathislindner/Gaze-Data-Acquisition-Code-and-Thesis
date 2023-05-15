@@ -55,8 +55,6 @@ def get_depths_and_colmap_point_ids(colmap_depth_image, colmap_points, depth_arr
                 
     return np.array(depths), np.array(visible_colmap_point_ids)
 
-    
-
 def get_scale(colmap_cameras, colmap_images, colmap_points, depth_array):
     colmap_depth_image = get_colmap_depth_image(colmap_images)
     depths, point_ids = get_depths_and_colmap_point_ids(colmap_depth_image, colmap_points, depth_array)
@@ -82,15 +80,29 @@ print("dense scale: ", dense_scale)
 
 #input are numpy arrays of shape pointcloud: (n, 3), R: (3, 3), t: (3), scale: float
 def transform_pointcloud(pointcloud, R, t, scale):
-    
+    t = -t.T @ R
+    #transformation_matrix = np.eye(4)
+    #scaling_matrix = np.eye(4)*scale
+    #transformation_matrix[:3, :3] = R
+    #transformation_matrix[:3, 3] = t 
+    #transformation_matrix[3, 3] = 1
+    #transformation_matrix = scaling_matrix @ transformation_matrix
+    #pointcloud = np.vstack((pointcloud.T, np.ones(pointcloud.shape[0])))
+    #pointcloud = transformation_matrix.T @ pointcloud 
+    #pointcloud = pointcloud[:3,:].T
+
+    M = np.array([[1, 0, 0], [0, -1, 0], [0, 0, -1]])
+    pointcloud = np.matmul(M, pointcloud.T).T
     # apply all three transformations seperately to debug
-    pointcloud = np.add(pointcloud, t)
     pointcloud = np.matmul(R, pointcloud.T).T
+    pointcloud = np.add(pointcloud, t)
     pointcloud = pointcloud * scale
+
     
+
+
     #mirror on x,y plane
-    #M = np.array([[-1, 0, 0], [0, -1, 0], [0, 0, -1]])
-    #pointcloud = np.matmul(M, pointcloud.T).T
+    #
     
     return pointcloud
 
@@ -117,6 +129,10 @@ def get_transformed_colmap_as_o3d(colmap_cameras, colmap_images, colmap_points, 
     colmap_rgb_colors = np.array([colmap_points[point_id].rgb for point_id in colmap_point_ids])
     rotation, translation = get_rotation_and_translation_matrix(colmap_cameras, colmap_images)
     transformed_colmap_points = transform_pointcloud(colmap_xyz, rotation, translation, scale)
+
+    #colmap_camera_point_xyz = get_colmap_depth_image(colmap_images).tvec
+    #colmap_camera_point_transformed = transform_pointcloud(colmap_camera_point_xyz, rotation, translation, scale)
+
     o3d_pointcloud = o3d.geometry.PointCloud()
     o3d_pointcloud.points = o3d.utility.Vector3dVector(transformed_colmap_points)
     o3d_pointcloud.colors = o3d.utility.Vector3dVector(colmap_rgb_colors)
@@ -131,6 +147,7 @@ def get_depth_camera_pointcloud_as_o3d(recording_path, nr_points=50000):
 depth_pointcloud = get_depth_camera_pointcloud_as_o3d(recording_path)
 sparse_camera_pointcloud = get_transformed_colmap_as_o3d(sparse_cameras, sparse_images, sparse_points, sparse_scale)
 dense_camera_pointcloud = get_transformed_colmap_as_o3d(dense_cameras, dense_images, dense_points, dense_scale)
+
 
 o3d.visualization.draw_plotly([depth_pointcloud, dense_camera_pointcloud],  width=1920, height=1080)
 o3d.visualization.draw_plotly([depth_pointcloud, sparse_camera_pointcloud],  width=1920, height=1080)
