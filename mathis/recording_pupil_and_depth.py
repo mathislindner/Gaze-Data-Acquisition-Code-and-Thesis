@@ -21,6 +21,7 @@ class acquisitionLogic():
 
         self.keyboard_listener = keyboard.Listener(on_press=self.on_press)
         self.keyboard_listener.start()
+        self.keyboard_listener.wait()
         #self.keyboard_listener.join()
         print("to start recording press right arrow")
         print("to stop recording press left arrow")
@@ -29,12 +30,12 @@ class acquisitionLogic():
 
     def on_press(self, key):
         if key == keyboard.Key.right:
-            print("recording")
             self.start_recording_all_devices()
+            print("recording")
 
         if key == keyboard.Key.left:
-            print("stop recording")
             self.stop_recording_all_devices()
+            print("stop recording")
 
         if key == keyboard.Key.space:
             self.trigger_event()
@@ -47,6 +48,8 @@ class acquisitionLogic():
                 self.keyboard_listener.stop()
                 print("exiting")
                 os._exit(1)
+        else:
+            print('key doesn t exist')
 
 
     def start_recording_all_devices(self):
@@ -92,7 +95,8 @@ class acquisitionLogic():
 
 
 if __name__ == "__main__":
-    #ip_address = "plip.ee.ethz.ch"
-    ip_address = "172.31.154.44"
+    #ip_address = "plihp.ee.ethz.ch"
+    #ip_address = "10.5.53.55"
+    ip_address = '172.31.154.44'
     port = "8080"
     acquisition_logic = acquisitionLogic(ip_address, port)
