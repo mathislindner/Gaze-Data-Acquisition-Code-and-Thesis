@@ -1,6 +1,8 @@
 from constants import *
 import os 
 from file_helper import copy_frames_to_new_folder
+from colmap_testing.colmap_helpers import read_write_model
+import numpy as np
 import time
 import shutil
 import subprocess
@@ -97,17 +99,50 @@ def run_colmap(recording_id):
     #os.system("sbatch" + " " + "run_colmap.sh" + " " + recording_folder)
 
 #run_colmap("ff0acdab-123d-41d8-bfd6-b641f99fc8eb")
+def get_colmap_sparse_model(recording_path):
+    path = os.path.join(recording_path, "colmap_ws/colmap_out_1/sparse")
+    cameras, images, points_3d = read_write_model.read_model(path, ".bin")
+    return cameras, images, points_3d
 
-def convert_vectors_to_true_scale(recording_id):
-    recording_folder = os.path.join(recordings_folder,str(recording_id))
-    colmap_ws_folder = os.path.join(recording_folder, "colmap_ws")
-    #TODO: verify that the colmap execution was successful
-    if not os.path.exists(os.path.join(colmap_ws_folder, "sparse/0/images.bin")):
-        print("Colmap execution was not successful, aborting")
-        return
-    
-    #import depth matrix
-    #find a clear spot in the matrix
-    #find the corresponding depth point from colmap
-    #calculate the scale factor thanks to rgb image
-    #convert all the points/cameras/images to true scale
+def get_colmap_dense_model(recording_path):
+    path = os.path.join(recording_path, "colmap_ws/automatic_recontructor/dense/0/sparse")
+    cameras, images, points_3d = read_write_model.read_model(path, ".bin")
+    return cameras, images, points_3d
+
+#TODO: instead of just using the 90th frame, average over a few frames from the beginning of the recording
+def get_depth_distances_array(recording_path):
+    depth_camera_distances = np.load(os.path.join(recording_path, "depth_array.npz"))
+    file_name = depth_camera_distances.files[0]
+    return depth_camera_distances[file_name][95] #depth_camera_distances[file_name][95] is the depth array of the 90th frame
+
+#returns the colmap image dict
+def get_colmap_depth_image(images):
+    for image_id in images:
+        if images[image_id].name == "depth_rgb.png":
+            return images[image_id]
+
+#returns the depths of the points thatare non zero in from the depth array
+def get_depths_and_colmap_point_ids(colmap_depth_image, colmap_points, depth_array):
+    #get the visible points
+    visible_colmap_point_ids, depths = [], []
+    for point_ids, pixel_location in zip(colmap_depth_image.point3D_ids, colmap_depth_image.xys):
+        if point_ids != -1:
+            pixel_location = np.round(pixel_location).astype(int) #round pixel locations
+            x = pixel_location[0]
+            y = pixel_location[1]
+            if depth_array[y, x] != 0:
+                visible_colmap_point_ids.append(point_ids)
+                depths.append(depth_array[y, x])
+                
+    return np.array(depths), np.array(visible_colmap_point_ids)
+
+def get_scale(colmap_cameras, colmap_images, colmap_points, depth_array):
+    colmap_depth_image = get_colmap_depth_image(colmap_images)
+    depths, point_ids = get_depths_and_colmap_point_ids(colmap_depth_image, colmap_points, depth_array)
+    visible_3Dpoints_by_depth_camera = np.array([colmap_points[point_id].xyz for point_id in point_ids])
+    camera_position = colmap_depth_image.tvec
+    #calculate distance between camera and points
+    distances = np.linalg.norm(visible_3Dpoints_by_depth_camera - camera_position, axis=1)
+    #calculate scale
+    scale = np.mean(depths / distances)
+    return scale / 1000 #convert to meters (because the pointcloud is in meters)
