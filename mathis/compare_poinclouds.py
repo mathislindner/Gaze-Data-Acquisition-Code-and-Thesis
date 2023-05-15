@@ -1,7 +1,10 @@
 from constants import *
 import numpy as np
 import pandas as pd
-import open3d as o3d
+try:
+    import open3d as o3d
+except:
+    pass
 from colmap_testing.colmap_helpers import read_write_model
 import os
 
@@ -19,7 +22,7 @@ def get_colmap_dense_model(recording_path):
     return cameras, images, points_3d
 
 #TODO: instead of just using the 90th frame, average over a few frames from the beginning of the recording
-def get_depth_distances_array(recording_path):
+def get_depth_distances_array(recording_path, image_id = 95):
     depth_camera_distances = np.load(os.path.join(recording_path, "depth_array.npz"))
     file_name = depth_camera_distances.files[0]
     return depth_camera_distances[file_name][95] #depth_camera_distances[file_name][95] is the depth array of the 90th frame
@@ -39,6 +42,10 @@ def get_colmap_depth_image(images):
     for image_id in images:
         if images[image_id].name == "depth_rgb.png":
             return images[image_id]
+        
+def get_colmap_depth_camera(images, cameras):
+    colmap_depth_image = get_colmap_depth_image(images)
+    return cameras[colmap_depth_image.camera_id]
 
 #returns the depths of the points thatare non zero in from the depth array
 def get_depths_and_colmap_point_ids(colmap_depth_image, colmap_points, depth_array):
@@ -167,6 +174,6 @@ sparse_camera_pointcloud = get_transformed_colmap_as_o3d(sparse_cameras, sparse_
 dense_camera_pointcloud = get_transformed_colmap_as_o3d(dense_cameras, dense_images, dense_points, dense_scale)
 dense_camera_ply_pointcloud = get_transformed_colmap_ply_as_o3d(dense_cameras, dense_images, dense_points, dense_scale).voxel_down_sample(voxel_size=0.05)
 
-o3d.visualization.draw_plotly([depth_pointcloud, dense_camera_pointcloud],  width=1920, height=1080)
-o3d.visualization.draw_plotly([depth_pointcloud, sparse_camera_pointcloud],  width=1920, height=1080)
-o3d.visualization.draw_plotly([depth_pointcloud, dense_camera_ply_pointcloud],  width=1920, height=1080)
+#o3d.visualization.draw_plotly([depth_pointcloud, dense_camera_pointcloud],  width=1920, height=1080)
+#o3d.visualization.draw_plotly([depth_pointcloud, sparse_camera_pointcloud],  width=1920, height=1080)
+#o3d.visualization.draw_plotly([depth_pointcloud, dense_camera_ply_pointcloud],  width=1920, height=1080)
