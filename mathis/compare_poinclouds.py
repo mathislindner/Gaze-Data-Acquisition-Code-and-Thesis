@@ -87,7 +87,7 @@ print("dense scale: ", dense_scale)
 
 #input are numpy arrays of shape pointcloud: (n, 3), R: (3, 3), t: (3), scale: float
 def transform_pointcloud(pointcloud, R, t, scale):
-    t = -t.T @ R
+    #t = -t.T @ R
     #transformation_matrix = np.eye(4)
     #scaling_matrix = np.eye(4)*scale
     #transformation_matrix[:3, :3] = R
@@ -98,13 +98,10 @@ def transform_pointcloud(pointcloud, R, t, scale):
     #pointcloud = transformation_matrix.T @ pointcloud 
     #pointcloud = pointcloud[:3,:].T
 
-    M = np.array([[1, 0, 0], [0, -1, 0], [0, 0, -1]])
-    pointcloud = np.matmul(M, pointcloud.T).T
     # apply all three transformations seperately to debug
     pointcloud = np.matmul(R, pointcloud.T).T
     pointcloud = np.add(pointcloud, t)
     pointcloud = pointcloud * scale
-
 
     #mirror on x,y plane
     #
@@ -167,6 +164,18 @@ def get_depth_camera_pointcloud_as_o3d(recording_path, nr_points=50000):
     path = os.path.join(recording_path,"meshed_depth_camera.ply")
     mesh = o3d.io.read_triangle_mesh(path)
     pointcloud  = mesh.sample_points_uniformly(number_of_points=nr_points)
+
+    M = np.array([[1, 0, 0], [0, -1, 0], [0, 0, -1]])
+    pointcloud_np = np.matmul(M, np.asarray(pointcloud.points).T).T
+    R_rgb_2_d = np.array([[ 0.999967098236084,  0.006591256242245436, 0.0047245752066373825], 
+                          [-0.006585866678506136,  0.9999776482582092,  -0.0011554613010957837], 
+                          [-0.004732085391879082,  0.001124307862482965, 0.9999881982803345]])
+    t_rgb_2_d = np.asarray([[-0.014696360565721989],
+                            [-7.160441600717604e-05],
+                            [-0.0003331863263156265]])
+    #pointcloud_np = (np.matmul(R_rgb_2_d, pointcloud_np.T) + t_rgb_2_d).T
+    pointcloud.points = o3d.utility.Vector3dVector(pointcloud_np)
+
     return pointcloud
 
 depth_pointcloud = get_depth_camera_pointcloud_as_o3d(recording_path)
@@ -177,3 +186,4 @@ dense_camera_ply_pointcloud = get_transformed_colmap_ply_as_o3d(dense_cameras, d
 #o3d.visualization.draw_plotly([depth_pointcloud, dense_camera_pointcloud],  width=1920, height=1080)
 #o3d.visualization.draw_plotly([depth_pointcloud, sparse_camera_pointcloud],  width=1920, height=1080)
 #o3d.visualization.draw_plotly([depth_pointcloud, dense_camera_ply_pointcloud],  width=1920, height=1080)
+o3d.visualization.draw_plotly([depth_pointcloud],  width=1920, height=1080)
