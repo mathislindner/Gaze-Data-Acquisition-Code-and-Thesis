@@ -44,7 +44,10 @@ def run_colmap_automatic_reconstructor(recording_id):
     print(command)
     os.system(command)
 
-#run_colmap_automatic_reconstructor('ff0acdab-123d-41d8-bfd6-b641f99fc8eb_copy')
+run_colmap_automatic_reconstructor('d89f66fb-a3b2-443a-b417-cf4346262dc2')
+
+def run_colmap_exhaustive_matcher(recording_id):
+    pass
 
 #run_colmap("ff0acdab-123d-41d8-bfd6-b641f99fc8eb")
 def get_colmap_sparse_model(recording_path):
