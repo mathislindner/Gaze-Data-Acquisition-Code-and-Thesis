@@ -50,28 +50,45 @@ def get_colmap_depth_camera(images, cameras):
 #returns the depths of the points thatare non zero in from the depth array
 def get_depths_and_colmap_point_ids(colmap_depth_image, colmap_points, depth_array):
     #get the visible points
-    visible_colmap_point_ids, depths = [], []
+    # TODO depth camera hardcoded intrinsics
+    fx_d = fy_d = 388.0116271972656
+    cx_d = 321.6023254394531
+    cy_d = 241.12362670898438
+    fx_rgb = 616.2463989257812
+    fy_rgb = 616.6265258789062
+    cx_rgb = 312.24853515625
+    cy_rgb = 250.3607940673828
+
+    visible_colmap_point_ids, depths, distances = [], [], []
     for point_ids, pixel_location in zip(colmap_depth_image.point3D_ids, colmap_depth_image.xys):
         if point_ids != -1:
             pixel_location = np.round(pixel_location).astype(int) #round pixel locations
-            x = pixel_location[0]
-            y = pixel_location[1]
-            if depth_array[y, x] != 0:
+            u = pixel_location[0]
+            v = pixel_location[1]
+            d = depth_array[v, u] / 1000.0 #convert to meters (because the pointcloud is in meters)
+            if d != 0:
+                xyz = np.array([(u-cx_d)/fx_d, (v-cy_d)/fy_d, 1.0])
+                xyz *= d
+                distances.append(np.linalg.norm(xyz))
                 visible_colmap_point_ids.append(point_ids)
-                depths.append(depth_array[y, x])
+                depths.append(d)
                 
-    return np.array(depths), np.array(visible_colmap_point_ids)
+    return np.array(depths), np.array(distances),  np.array(visible_colmap_point_ids)
 
 def get_scale(colmap_cameras, colmap_images, colmap_points, depth_array):
     colmap_depth_image = get_colmap_depth_image(colmap_images)
-    depths, point_ids = get_depths_and_colmap_point_ids(colmap_depth_image, colmap_points, depth_array)
+    depths, distances_d, point_ids = get_depths_and_colmap_point_ids(colmap_depth_image, colmap_points, depth_array)
     visible_3Dpoints_by_depth_camera = np.array([colmap_points[point_id].xyz for point_id in point_ids])
-    camera_position = colmap_depth_image.tvec
+    # COLMAP gives world_to_camera pose, 
+    # which means that camera position in world coordinates is -R_w_2_c.T @ t_w_2_c
+    # https://colmap.github.io/format.html#images-txt
+    # camera_position = colmap_depth_image.tvec # OLD
+    camera_position = -read_write_model.qvec2rotmat(colmap_depth_image.qvec).T @ colmap_depth_image.tvec
     #calculate distance between camera and points
-    distances = np.linalg.norm(visible_3Dpoints_by_depth_camera - camera_position, axis=1)
+    distances_colmap = np.linalg.norm(visible_3Dpoints_by_depth_camera - camera_position[None,...], axis=1)
     #calculate scale
-    scale = np.mean(depths / distances)
-    return scale / 1000 #convert to meters (because the pointcloud is in meters)
+    scale = np.mean(distances_d / distances_colmap)
+    return scale 
 ############################################################################################################
 sparse_cameras, sparse_images, sparse_points = get_colmap_sparse_model(recording_path)
 dense_cameras, dense_images, dense_points = get_colmap_dense_model(recording_path)
@@ -185,5 +202,5 @@ dense_camera_ply_pointcloud = get_transformed_colmap_ply_as_o3d(dense_cameras, d
 
 #o3d.visualization.draw_plotly([depth_pointcloud, dense_camera_pointcloud],  width=1920, height=1080)
 #o3d.visualization.draw_plotly([depth_pointcloud, sparse_camera_pointcloud],  width=1920, height=1080)
-#o3d.visualization.draw_plotly([depth_pointcloud, dense_camera_ply_pointcloud],  width=1920, height=1080)
-o3d.visualization.draw_plotly([depth_pointcloud],  width=1920, height=1080)
+o3d.visualization.draw_plotly([depth_pointcloud, dense_camera_ply_pointcloud],  width=1920, height=1080)
+#o3d.visualization.draw_plotly([depth_pointcloud],  width=1920, height=1080)
