@@ -57,6 +57,12 @@ def find_element_pairs(seq_1, seq_2):
         else:
             return best_diff, best_i
         
+    #sequences are numpy arrays
+    if seq_1.any() == False or seq_2.any() == False:
+        print('empty sequence')
+        print(np.zeros(shape=(seq_1.shape[0])).shape)
+
+        return np.zeros(shape=(seq_1.shape[0], 5))
     push_back = 3
         
     # Pointer initialization
@@ -138,7 +144,9 @@ def correspond_cameras_and_gaze(recording_id):
     gaze_df = pd.read_csv(os.path.join(recording_folder, "gaze.csv"))
     gaze_timestamps = gaze_df["timestamp [ns]"].values / scale_factor
     events_df = pd.read_csv(os.path.join(recording_folder, "events.csv"))
-    events_timestamps = events_df['timestamp [ns]'] / scale_factor
+    #only keep if name is just an integer
+    events_df = events_df[events_df['name'].str.isnumeric()]
+    events_timestamps = events_df['timestamp [ns]'].values / scale_factor
     imu_df = pd.read_csv(os.path.join(recording_folder, "imu.csv"))
     imu_timestamps = imu_df["timestamp [ns]"].values / scale_factor
     #depth_camera_df = pd.read_csv(os.path.join(recording_folder, "depth_camera_timestamps.csv"))
@@ -169,6 +177,7 @@ def correspond_cameras_and_gaze(recording_id):
         depth_camera_timestamps_rel = depth_camera_timestamps - gaze_timestamps[0]
 
     best_pairs_gaze_left = find_element_pairs(gaze_timestamps_rel, left_timestamps_rel)
+    print("best pairs gaze left: " + str(best_pairs_gaze_left.shape))
     best_pairs_gaze_right = find_element_pairs(gaze_timestamps_rel, right_timestamps_rel)
     best_pairs_gaze_world = find_element_pairs(gaze_timestamps_rel, world_timestamps_rel)
     best_pairs_gaze_events = find_element_pairs(gaze_timestamps_rel, events_timestamps_rel)
