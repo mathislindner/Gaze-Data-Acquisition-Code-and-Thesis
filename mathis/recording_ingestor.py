@@ -9,7 +9,7 @@ import json
 import zipfile
 from file_helper import move_subfolder_content_to_parent #, extract_frames
 from frames_extractor import extract_frames, extract_depth_camera_frames, undistort_world_camera
-from colmap_executer import run_colmap
+from colmap_executer import run_colmap_automatic_reconstructor
 #object to download process one recording
 class  recordingDownloader:
     def __init__(self, recording_id, api):
