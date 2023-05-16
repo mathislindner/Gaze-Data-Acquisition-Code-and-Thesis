@@ -195,8 +195,6 @@ def get_depth_camera_pointcloud_as_o3d(recording_path, nr_points=50000):
 
     return pointcloud
 
-dense_scale = 0.26
-
 depth_pointcloud = get_depth_camera_pointcloud_as_o3d(recording_path)
 sparse_camera_pointcloud = get_transformed_colmap_as_o3d(sparse_cameras, sparse_images, sparse_points, sparse_scale)
 dense_camera_pointcloud = get_transformed_colmap_as_o3d(dense_cameras, dense_images, dense_points, dense_scale)
