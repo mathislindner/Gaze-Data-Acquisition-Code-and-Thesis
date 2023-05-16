@@ -82,7 +82,7 @@ def get_scale(colmap_cameras, colmap_images, colmap_points, depth_array):
     # COLMAP gives world_to_camera pose, 
     # which means that camera position in world coordinates is -R_w_2_c.T @ t_w_2_c
     # https://colmap.github.io/format.html#images-txt
-    # camera_position = colmap_depth_image.tvec # OLD
+    #camera_position = colmap_depth_image.tvec # OLD
     camera_position = -read_write_model.qvec2rotmat(colmap_depth_image.qvec).T @ colmap_depth_image.tvec
     #calculate distance between camera and points
     distances_colmap = np.linalg.norm(visible_3Dpoints_by_depth_camera - camera_position[None,...], axis=1)
@@ -190,17 +190,49 @@ def get_depth_camera_pointcloud_as_o3d(recording_path, nr_points=50000):
     t_rgb_2_d = np.asarray([[-0.014696360565721989],
                             [-7.160441600717604e-05],
                             [-0.0003331863263156265]])
-    #pointcloud_np = (np.matmul(R_rgb_2_d, pointcloud_np.T) + t_rgb_2_d).T
+    pointcloud_np = (np.matmul(R_rgb_2_d, pointcloud_np.T) + t_rgb_2_d).T
     pointcloud.points = o3d.utility.Vector3dVector(pointcloud_np)
 
     return pointcloud
 
+dense_scale = 0.26
+
 depth_pointcloud = get_depth_camera_pointcloud_as_o3d(recording_path)
 sparse_camera_pointcloud = get_transformed_colmap_as_o3d(sparse_cameras, sparse_images, sparse_points, sparse_scale)
 dense_camera_pointcloud = get_transformed_colmap_as_o3d(dense_cameras, dense_images, dense_points, dense_scale)
-dense_camera_ply_pointcloud = get_transformed_colmap_ply_as_o3d(dense_cameras, dense_images, dense_points, dense_scale).voxel_down_sample(voxel_size=0.05)
+dense_camera_ply_pointcloud = get_transformed_colmap_ply_as_o3d(dense_cameras, dense_images, dense_points, dense_scale).voxel_down_sample(voxel_size=0.005)
+
+pointcloud_xyz_tmp = np.asarray(dense_camera_ply_pointcloud.points)
+pointcloud_rgb_tmp = np.asarray(dense_camera_ply_pointcloud.colors)
+h_d, w_d = depth_distances_array.shape[0],  depth_distances_array.shape[1]
+colmap_proj_d_tmp = np.zeros((h_d, w_d, 3))
+colmap_proj_d_count_tmp = np.zeros((h_d, w_d, 1))
+fx_d_rgb = 616.2463989257812
+fy_d_rgb = 616.6265258789062
+cx_d_rgb = 312.24853515625
+cy_d_rgb = 250.3607940673828
+pointcloud_uv_tmp = pointcloud_xyz_tmp[:, :2] / pointcloud_xyz_tmp[:, 2:] 
+pointcloud_uv_tmp[:, 0] = pointcloud_uv_tmp[:, 0] * fx_d_rgb + cx_d_rgb
+pointcloud_uv_tmp[:, 1] = pointcloud_uv_tmp[:, 1] * fy_d_rgb + cy_d_rgb
+pointcloud_uv_tmp = np.rint(pointcloud_uv_tmp).astype(np.int32)
+mask_tmp = (pointcloud_uv_tmp[:, 0] >= 0)*(pointcloud_uv_tmp[:, 0] < w_d)*(pointcloud_uv_tmp[:, 1] >= 0)*(pointcloud_uv_tmp[:, 1] < h_d)
+pointcloud_uv_tmp = pointcloud_uv_tmp[mask_tmp]
+pointcloud_rgb_tmp = pointcloud_rgb_tmp[mask_tmp]
+
+for i, (u, v) in enumerate(pointcloud_uv_tmp):
+    colmap_proj_d_tmp[v, u, :] = pointcloud_rgb_tmp[i, :]
+    colmap_proj_d_count_tmp[v, u, 0] += 1.0
+colmap_proj_d_count_tmp[colmap_proj_d_count_tmp == 0] = 1.0
+colmap_proj_d_tmp /= colmap_proj_d_count_tmp
+
+import matplotlib.pyplot as plt
+plt.imshow(colmap_proj_d_tmp)
+plt.savefig('colmap_proj_2_dcam_matplotlib.png')
+plt.close()
+import matplotlib.image
+matplotlib.image.imsave('colmap_proj_2_dcam.png', colmap_proj_d_tmp)
 
 #o3d.visualization.draw_plotly([depth_pointcloud, dense_camera_pointcloud],  width=1920, height=1080)
-#o3d.visualization.draw_plotly([depth_pointcloud, sparse_camera_pointcloud],  width=1920, height=1080)
-o3d.visualization.draw_plotly([depth_pointcloud, dense_camera_ply_pointcloud],  width=1920, height=1080)
+o3d.visualization.draw_plotly([depth_pointcloud, sparse_camera_pointcloud],  width=1920, height=1080)
+#o3d.visualization.draw_plotly([depth_pointcloud, dense_camera_ply_pointcloud],  width=1920, height=1080)
 #o3d.visualization.draw_plotly([depth_pointcloud],  width=1920, height=1080)
