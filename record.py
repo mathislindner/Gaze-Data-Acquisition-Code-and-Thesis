@@ -1,5 +1,4 @@
 #uses the classes from recording_devices.py
-import pyrealsense2 as rs
 import os
 import shutil
 from dependencies.constants import *
@@ -7,15 +6,14 @@ import pynput.keyboard as keyboard
 from dependencies.recording_devices import *
 from time import time_ns
 import json
+import yaml
+from yaml.loader import SafeLoader
 
 class acquisitionLogic():
     def __init__(self, ip, port):
-
         self.recording_bool = False
         self.event_id = None
         self.recording_id = "temp"
-
-        #TODO:change back to PupilCamera
         self.pupil_camera = PupilCamera(ip, port)
         #self.pupil_camera = PupilCameraTest()
         self.depth_and_rgb_cameras = depthAndRgbCameras()
@@ -86,16 +84,15 @@ class acquisitionLogic():
         if self.recording_bool == False:
             print('Need to record to be able to trigger events')
             return
-        #else trigger event
-        #device.send_event(str(self.event_id), event_timestamp_unix_ns=event_timestamp)
+        #else trigger event on pupil camera
+        self.pupil_camera.device.send_event(str(self.event_id), event_timestamp_unix_ns=event_timestamp)
         print(f'Triggered Event nr ({self.event_id})')
-        #save event to local_syncronisation.json
+        #and save event to local_syncronisation.json
         dictionary = {"Event: " + str(self.event_id) : event_timestamp}
         with open(local_synchronisation_path, 'r') as f:
             data = json.load(f)
         data.update(dictionary)    
         with open(local_synchronisation_path, 'w') as f:
-            
             json_object = json.dumps(data, indent = 4)
             f.write(json_object)
 
@@ -105,6 +102,9 @@ class acquisitionLogic():
 if __name__ == "__main__":
     #ip_address = "plihp.ee.ethz.ch"
     #ip_address = "10.5.54.60"
-    ip_address = '172.31.154.44'
-    port = "8080"
+    with open('configuration.yaml') as f:
+        config = yaml.load(f, Loader=SafeLoader)
+    #TODO: make sure these are strings
+    ip_address = str(config['IP_ADDRESS'])
+    port = str(config['PORT'])
     acquisition_logic = acquisitionLogic(ip_address, port)

@@ -4,7 +4,7 @@ import os
 from shutil import copy,move,rmtree
 import datetime
 import glob
-from constants import *
+from dependencies.constants import *
 import numpy as np
 
 def decode_timestamp(timestamp_path):

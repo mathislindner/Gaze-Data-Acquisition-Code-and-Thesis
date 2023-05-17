@@ -1,15 +1,16 @@
 import os
 import pandas as pd
-from synchronisation import correspond_cameras_and_gaze
+from dependencies.synchronisation import correspond_cameras_and_gaze
+from dependencies.constants import *
+from dependencies.file_helper import move_subfolder_content_to_parent #, extract_frames
+from dependencies.frames_extractor import extract_frames, extract_depth_camera_frames, undistort_world_camera
+from dependencies.colmap_executer import run_colmap_automatic_reconstructor
 from pupilcloud import Api, ApiException
 import io
-from constants import *
 import requests
 import json
 import zipfile
-from file_helper import move_subfolder_content_to_parent #, extract_frames
-from frames_extractor import extract_frames, extract_depth_camera_frames, undistort_world_camera
-from colmap_executer import run_colmap_automatic_reconstructor
+
 #object to download process one recording
 class  recordingDownloader:
     def __init__(self, recording_id, api):

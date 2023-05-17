@@ -3,14 +3,19 @@
 #TODO:rename this file since we are not just procssing pupil cloud data, but also depth camera data
 
 from pupilcloud import Api, ApiException
-from recording_ingestor import recordingDownloader, recordingCurator
-from constants import *
+from dependencies.recording_ingestor import recordingDownloader, recordingCurator
+from dependencies.constants import *
 import os
 import multiprocessing
+import yaml
+from yaml.loader import SafeLoader
 
+with open("configuration.yaml", 'r') as f:
+    config = yaml.load(f, Loader=SafeLoader)
+api_key = str(config["API_KEY"])
 #API object for all the requests, #FIXME: put in a config file, and create api object in the recording ingestor
-api = Api(api_key="K2xko4e9Vt9VXTuThUngAG2yKTW2ZRcenhEFe9K4tiSA", host="https://api.cloud.pupil-labs.com")
-
+api = Api(api_key=api_key, host="https://api.cloud.pupil-labs.com")
+print(api.get_profile().status)
 # Returns a list of recordings
 #FIXME do not include unprocessed recordings (or do a try except in the download function)
 def get_recordings():
@@ -76,7 +81,7 @@ if __name__ == "__main__":
     #download_recording("be0f413f-0bdd-4053-a1d4-c03efd57e532")
     #curate_recording("82e52db9-1cac-495d-99dd-bebb51c393a0")
 
-    download_all_recordings_multiprocessing()
-    curate_all_recordings_multiprocessing()
+    #download_all_recordings_multiprocessing()
+    #curate_all_recordings_multiprocessing()
     #export_all_recordings_multiprocessing()
 

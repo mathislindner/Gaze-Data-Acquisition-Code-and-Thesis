@@ -5,9 +5,9 @@
 import numpy as np
 import os
 import pandas as pd
-from constants import *
+from dependencies.constants import *
 import json
-from file_helper import decode_timestamp, get_system_start_ts
+from dependencies.file_helper import decode_timestamp, get_system_start_ts
 
 #returns the offset between the pupil labs time and the system time using the android logs command 
 def get_offset_from_log(recording_id):

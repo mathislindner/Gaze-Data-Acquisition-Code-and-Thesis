@@ -2,8 +2,8 @@ import os
 import subprocess
 import json
 import numpy as np
-from file_helper import decode_timestamp
-from constants import *
+from dependencies.file_helper import decode_timestamp
+from dependencies.constants import *
 import cv2
 import pyrealsense2 as rs
 import pandas as pd

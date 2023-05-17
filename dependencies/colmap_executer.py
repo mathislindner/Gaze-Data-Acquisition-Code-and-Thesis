@@ -1,7 +1,7 @@
-from constants import *
+from dependencies.constants import *
+from dependencies.file_helper import copy_frames_to_new_folder
+from dependencies.colmap_helpers import read_write_model
 import os 
-from file_helper import copy_frames_to_new_folder
-from colmap_helpers import read_write_model
 import numpy as np
 import shutil
 
