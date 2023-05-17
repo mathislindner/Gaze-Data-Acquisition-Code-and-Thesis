@@ -2,7 +2,6 @@ from constants import *
 import os 
 from file_helper import copy_frames_to_new_folder
 from colmap_helpers import read_write_model
-import colmap_helpers.read_write_model
 import numpy as np
 import shutil
 
@@ -91,7 +90,7 @@ def run_colmap_exhaustive_matcher(recording_id):
     print(command)
     os.system(command)
 
-run_colmap_exhaustive_matcher("ff0acdab-123d-41d8-bfd6-b641f99fc8eb_copy")
+#run_colmap_exhaustive_matcher("ff0acdab-123d-41d8-bfd6-b641f99fc8eb_copy")
 
 def get_colmap_sparse_model(recording_path):
     path = os.path.join(recording_path, "colmap_ws/colmap_out_1/sparse")
