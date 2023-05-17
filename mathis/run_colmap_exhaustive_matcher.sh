@@ -14,12 +14,12 @@ recordingfolder=$1
 WS_PATH=$recordingfolder/colmap_ws
 COLMAP_OUT_PATH=$WS_PATH/exhaustive_matcher_out
 IMAGES_PATH=$WS_PATH/all_images
-DATABASE_PATH=$DATASET_PATH/database.db
+DATABASE_PATH=$WS_PATH/database.db
 
 colmap feature_extractor \
    --database_path $DATABASE_PATH \
-   --image_path $DATASET_PATH/images/all_images \
-   --image_list_path $DATASET_PATH/world_images.txt \
+   --image_path $IMAGES_PATH \
+   --image_list_path $WS_PATH/world_images.txt \
    --ImageReader.single_camera_per_image false \
    --ImageReader.single_camera_per_folder true \
    --ImageReader.camera_model PINHOLE \
@@ -31,19 +31,20 @@ colmap feature_extractor \
 colmap exhaustive_matcher \
    --database_path $DATABASE_PATH
 
-mkdir $WS_PATH/colmap_out_0
-mkdir $WS_PATH/colmap_out_0/sparse
+mkdir $COLMAP_OUT_PATH
+mkdir $COLMAP_OUT_PATH/only_world
+mkdir $COLMAP_OUT_PATH/only_world/sparse
 
 colmap mapper \
     --database_path $DATABASE_PATH \
-    --image_path $DATASET_PATH/images/all_images \
-    --output_path $WS_PATH/colmap_out_0/sparse \
-    --image_list_path $DATASET_PATH/world_images.txt 
+    --image_path $IMAGES_PATH \
+    --output_path $COLMAP_OUT_PATH/only_world/sparse \
+    --image_list_path $WS_PATH/world_images.txt 
 #################################################################################################
 colmap feature_extractor \
    --database_path $DATABASE_PATH \
-   --image_path $DATASET_PATH/images/all_images \
-   --image_list_path $DATASET_PATH/depth_images.txt \
+   --image_path $IMAGES_PATH \
+   --image_list_path $WS_PATH/depth_images.txt \
    --ImageReader.single_camera_per_image false \
    --ImageReader.single_camera_per_folder true \
    --ImageReader.camera_model SIMPLE_RADIAL \
@@ -52,22 +53,22 @@ colmap feature_extractor \
 colmap exhaustive_matcher \
    --database_path $DATABASE_PATH
 
-mkdir $WS_PATH/colmap_out_1
-mkdir $WS_PATH/colmap_out_1/sparse
+mkdir $COLMAP_OUT_PATH/world_and_depth
+mkdir $COLMAP_OUT_PATH/world_and_depth/sparse
 
 colmap mapper \
     --database_path $DATABASE_PATH \
-    --input_path $WS_PATH/colmap_out_0/sparse/0 \
-    --image_path $DATASET_PATH/images/all_images \
-    --output_path $WS_PATH/colmap_out_1/sparse \
-    --image_list_path $DATASET_PATH/depth_images.txt \
+    --input_path $COLMAP_OUT_PATH/only_world/sparse/0 \
+    --image_path $IMAGES_PATH \
+    --output_path $COLMAP_OUT_PATH/world_and_depth/sparse \
+    --image_list_path $WS_PATH/depth_images.txt \
     --Mapper.ba_refine_extra_params 0 \
     --Mapper.ba_refine_focal_length 0 \
 
 
 colmap bundle_adjuster \
-    --input_path $WS_PATH/colmap_out_1/sparse \
-    --output_path $WS_PATH/colmap_out_1/sparse \
+    --input_path $COLMAP_OUT_PATH/world_and_depth/sparse \
+    --output_path $COLMAP_OUT_PATH/world_and_depth/sparse \
     --BundleAdjustment.refine_extra_params 0 \
     --BundleAdjustment.refine_focal_length 0  \
     --BundleAdjustment.refine_extrinsics 0 
