@@ -65,10 +65,11 @@ class PupilCamera():
                 event_timestamp_unix_ns=current_time_ns_in_companion_clock,
                 )
         #create folder in recording_id folder
-        os.mkdir(recordings_folder + self.recording_id)
+        recording_folder = os.path.join(recordings_folder, self.recording_id)
+        os.mkdir(recording_folder)
         dictionary = { "system_start_time": pc_recording_start_time, "offset": clock_offset_ns}
         json_object = json.dumps(dictionary, indent = 4)
-        with open (recordings_folder + self.recording_id + '/local_synchronisation.json', 'a') as f:
+        with open (os.path.join(recording_folder,'local_synchronisation.json'), 'a') as f:
             f.write(json_object)
 
 #this class is just to test the d435 alone
