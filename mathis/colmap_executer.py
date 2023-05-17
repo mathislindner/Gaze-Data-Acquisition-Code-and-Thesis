@@ -44,7 +44,7 @@ def run_colmap_automatic_reconstructor(recording_id):
     print(command)
     os.system(command)
 
-run_colmap_automatic_reconstructor('d89f66fb-a3b2-443a-b417-cf4346262dc2')
+#run_colmap_automatic_reconstructor('d89f66fb-a3b2-443a-b417-cf4346262dc2')
 
 def run_colmap_exhaustive_matcher(recording_id):
     pass

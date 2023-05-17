@@ -1,6 +1,7 @@
 #uses the classes from recording_devices.py
 import pyrealsense2 as rs
 import os
+import shutil
 from constants import *
 import pynput.keyboard as keyboard
 from recording_devices import *
@@ -26,6 +27,7 @@ class acquisitionLogic():
         print("to start recording press right arrow")
         print("to stop recording press left arrow")
         print("to trigger event press space")
+        print("to cancel recording press delete")
         print("to exit press esc")
 
     def on_press(self, key):
@@ -48,6 +50,11 @@ class acquisitionLogic():
                 self.keyboard_listener.stop()
                 print("exiting")
                 os._exit(1)
+
+        if key == keyboard.Key.delete:
+            self.cancel_recording()
+            print("recording cancelled")
+
         elif key != keyboard.Key.right and key != keyboard.Key.left and key != keyboard.Key.space and key != keyboard.Key.esc:
             print('key doesn t exist')
 
@@ -66,9 +73,10 @@ class acquisitionLogic():
     def cancel_recording(self):
         self.recording_bool = False
         self.pupil_camera.cancel_recording()
-        recording_id = self.depth_and_rgb_cameras.cancel_recording()
+        self.depth_and_rgb_cameras.cancel_recording()
+
         #delete_recording_folder(self.recording_id)
-        os.rmdir(os.path.join(recordings_folder, recording_id))
+        shutil.rmtree(os.path.join(recordings_folder, self.recording_id))
 
     def trigger_event(self):
         event_timestamp = time_ns()
