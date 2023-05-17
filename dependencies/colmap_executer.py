@@ -1,7 +1,8 @@
 from constants import *
 import os 
 from file_helper import copy_frames_to_new_folder
-from colmap_testing.colmap_helpers import read_write_model
+from colmap_helpers import read_write_model
+import colmap_helpers.read_write_model
 import numpy as np
 import shutil
 
