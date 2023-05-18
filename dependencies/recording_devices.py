@@ -1,7 +1,7 @@
 from pupil_labs.realtime_api.simple import Device
 import pyrealsense2 as rs
 import os
-from constants import *
+from dependencies.constants import *
 import json
 from time import time_ns
 
