@@ -119,5 +119,5 @@ def clean_up_colmap_temp():
             #delete colmap ws from scratch_net_tmp
             shutil.rmtree(os.path.join(scratch_net_folder_tmp, recording_id))
 
-run_colmap_exhaustive_matcher("028a1d2a-113c-42fd-9455-e2cd559df90f")
+#run_colmap_exhaustive_matcher("028a1d2a-113c-42fd-9455-e2cd559df90f")
 #run_colmap_exhaustive_matcher("ff0acdab-123d-41d8-bfd6-b641f99fc8eb_copy")
