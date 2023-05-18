@@ -1,14 +1,28 @@
-from dependencies.constants import *
-from dependencies.file_helper import copy_frames_to_new_folder
-from dependencies.colmap_helpers import read_write_model
+try:
+    from dependencies.constants import *
+    from dependencies.file_helper import copy_frames_to_new_folder
+    from dependencies.colmap_helpers import read_write_model
+except:
+    from constants import *
+    from file_helper import copy_frames_to_new_folder
+    from colmap_helpers import read_write_model
 import os 
 import numpy as np
 import shutil
 
+def copy_ws_to_scratch(recording_id):
+    recording_folder = os.path.join(recordings_folder, str(recording_id))
+    colmap_ws_folder = os.path.join(recording_folder, "colmap_ws")
+
+    ws_scratch_path = os.path.join(scratch_net_folder_tmp, str(recording_id), "colmap_ws")
+    #copy all files from colmap_ws to scratch
+    shutil.copytree(colmap_ws_folder, ws_scratch_path)
+    return ws_scratch_path
+
 #FIXME: will probably run into issues if we have the recordings ina different folder than on scratch net
 def run_colmap_automatic_reconstructor(recording_id):
     current_working_dir = os.getcwd()
-    runcolmap_batch_file = os.path.join(current_working_dir, 'mathis', "run_colmap.sh")
+    runcolmap_batch_file = os.path.join(current_working_dir, 'dependencies', "run_colmap.sh")
     
     recording_folder = os.path.join(recordings_folder,str(recording_id))
 
@@ -45,10 +59,12 @@ def run_colmap_automatic_reconstructor(recording_id):
     os.system(command)
 
 #run_colmap_automatic_reconstructor('d89f66fb-a3b2-443a-b417-cf4346262dc2')
-
 def run_colmap_exhaustive_matcher(recording_id):
+    if os.path.exists(os.path.join(recordings_folder,str(recording_id), "colmap_ws")):
+        print("colmap workspace already exists, skipping")
+        return
     current_working_dir = os.getcwd()
-    runcolmap_batch_file = os.path.join(current_working_dir, 'mathis', "run_colmap_exhaustive_matcher.sh")
+    runcolmap_batch_file = os.path.join(current_working_dir, 'dependencies', "run_colmap_exhaustive_matcher.sh")
     
     recording_folder = os.path.join(recordings_folder,str(recording_id))
 
@@ -85,57 +101,23 @@ def run_colmap_exhaustive_matcher(recording_id):
     with open(os.path.join(colmap_ws_folder, "depth_images.txt"), "w") as f:
         f.write(all_images_names[-1])
 
+    ws_scratch_path = copy_ws_to_scratch(recording_id)
+
     #run command for colmapsh
-    command = "sbatch" + " " + runcolmap_batch_file + " " + recording_folder
+    command = "sbatch" + " " + runcolmap_batch_file + " " + ws_scratch_path
     print(command)
     os.system(command)
 
+def clean_up_colmap_temp():
+    #copy ws from scratch_net to recordings folder if exhaustive_matching_done.txt exists
+    recording_ids = os.listdir(scratch_net_folder_tmp)
+    for recording_id in recording_ids:
+        if os.path.exists(os.path.join(scratch_net_folder_tmp, recording_id, "colmap_ws", "exhaustive_matching_done.txt")):
+            print("copying colmap ws from scratch_net to recordings folder for recording: " + recording_id)
+            #force copytree to overwrite existing folder
+            shutil.copytree(os.path.join(scratch_net_folder_tmp, recording_id, "colmap_ws"), os.path.join(recordings_folder, recording_id, "colmap_ws"), dirs_exist_ok=True)
+            #delete colmap ws from scratch_net_tmp
+            shutil.rmtree(os.path.join(scratch_net_folder_tmp, recording_id))
+
+run_colmap_exhaustive_matcher("028a1d2a-113c-42fd-9455-e2cd559df90f")
 #run_colmap_exhaustive_matcher("ff0acdab-123d-41d8-bfd6-b641f99fc8eb_copy")
-
-def get_colmap_sparse_model(recording_path):
-    path = os.path.join(recording_path, "colmap_ws/colmap_out_1/sparse")
-    cameras, images, points_3d = read_write_model.read_model(path, ".bin")
-    return cameras, images, points_3d
-
-def get_colmap_dense_model(recording_path):
-    path = os.path.join(recording_path, "colmap_ws/automatic_recontructor/dense/0/sparse")
-    cameras, images, points_3d = read_write_model.read_model(path, ".bin")
-    return cameras, images, points_3d
-
-#TODO: instead of just using the 90th frame, average over a few frames from the beginning of the recording
-def get_depth_distances_array(recording_path):
-    depth_camera_distances = np.load(os.path.join(recording_path, "depth_array.npz"))
-    file_name = depth_camera_distances.files[0]
-    return depth_camera_distances[file_name][95] #depth_camera_distances[file_name][95] is the depth array of the 90th frame
-
-#returns the colmap image dict
-def get_colmap_depth_image(images):
-    for image_id in images:
-        if images[image_id].name == "depth_rgb.png":
-            return images[image_id]
-
-#returns the depths of the points thatare non zero in from the depth array
-def get_depths_and_colmap_point_ids(colmap_depth_image, colmap_points, depth_array):
-    #get the visible points
-    visible_colmap_point_ids, depths = [], []
-    for point_ids, pixel_location in zip(colmap_depth_image.point3D_ids, colmap_depth_image.xys):
-        if point_ids != -1:
-            pixel_location = np.round(pixel_location).astype(int) #round pixel locations
-            x = pixel_location[0]
-            y = pixel_location[1]
-            if depth_array[y, x] != 0:
-                visible_colmap_point_ids.append(point_ids)
-                depths.append(depth_array[y, x])
-                
-    return np.array(depths), np.array(visible_colmap_point_ids)
-
-def get_scale(colmap_cameras, colmap_images, colmap_points, depth_array):
-    colmap_depth_image = get_colmap_depth_image(colmap_images)
-    depths, point_ids = get_depths_and_colmap_point_ids(colmap_depth_image, colmap_points, depth_array)
-    visible_3Dpoints_by_depth_camera = np.array([colmap_points[point_id].xyz for point_id in point_ids])
-    camera_position = colmap_depth_image.tvec
-    #calculate distance between camera and points
-    distances = np.linalg.norm(visible_3Dpoints_by_depth_camera - camera_position, axis=1)
-    #calculate scale
-    scale = np.mean(depths / distances)
-    return scale / 1000 #convert to meters (because the pointcloud is in meters)

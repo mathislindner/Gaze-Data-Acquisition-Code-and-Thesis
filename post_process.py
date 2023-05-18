@@ -81,7 +81,7 @@ if __name__ == "__main__":
     #download_recording("be0f413f-0bdd-4053-a1d4-c03efd57e532")
     #curate_recording("82e52db9-1cac-495d-99dd-bebb51c393a0")
 
-    #download_all_recordings_multiprocessing()
-    #curate_all_recordings_multiprocessing()
+    download_all_recordings_multiprocessing()
+    curate_all_recordings_multiprocessing()
     #export_all_recordings_multiprocessing()
 

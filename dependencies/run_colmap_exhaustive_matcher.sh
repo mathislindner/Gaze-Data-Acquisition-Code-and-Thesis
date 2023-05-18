@@ -1,17 +1,16 @@
 #!/bin/bash
-#SBATCH --output=/scratch_net/snapo/mlindner/docs/gaze_data_acquisition/mathis/colmap_log/%j.out
+#SBATCH --output=/scratch_net/snapo/mlindner/docs/gaze_data_acquisition/colmap_log/%j.out
 #SBATCH --gres=gpu:1 
 #SBATCH --mem=32G
 
-#first argument should be the recording folder
-recordingfolder=$1
+#first argument should be the ws path
+WS_PATH=$1
 #move the images to a temporary folder on scratch_net
 #run colmap on the cluster
 #when the job is finished move the results back to the recording folder
 #move the results back to the recording folder
 
 
-WS_PATH=$recordingfolder/colmap_ws
 COLMAP_OUT_PATH=$WS_PATH/exhaustive_matcher_out
 IMAGES_PATH=$WS_PATH/all_images
 DATABASE_PATH=$WS_PATH/database.db
@@ -73,6 +72,8 @@ colmap bundle_adjuster \
     --BundleAdjustment.refine_focal_length 0  \
     --BundleAdjustment.refine_extrinsics 0 
 
+#create text file that says that the exhaustive matching is done
+touch $WS_PATH/exhaustive_matching_done.txt
 
 ##################################################################################################
 

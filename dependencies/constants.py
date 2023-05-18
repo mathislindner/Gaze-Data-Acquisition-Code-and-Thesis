@@ -19,6 +19,7 @@ elif username == 'mathi':
     exports_folder = "C:/Users/mathi/Documents/GitHub/gaze_data_acquisition/mathis/exports/"
 elif username == "mlindner":
     #recordings_folder = "/scratch_net/snapo/mlindner/docs/gaze_data_acquisition/oos/recordings"
+    scratch_net_folder_tmp = "/scratch_net/snapo/mlindner/tmp" #this folder is to run colmap, which is why it s in the scratch net!
     recordings_folder = "/srv/beegfs02/scratch/aegis_cvl/data/data_collection/recordings"
 else:
     raise AssertionError

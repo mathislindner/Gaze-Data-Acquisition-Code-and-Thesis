@@ -1,11 +1,11 @@
-from constants import *
+from dependencies.constants import *
 import numpy as np
 import pandas as pd
 try:
     import open3d as o3d
 except:
     pass
-from colmap_testing.colmap_helpers import read_write_model
+from dependencies.colmap_helpers import read_write_model
 import os
 
 recording_id = "ff0acdab-123d-41d8-bfd6-b641f99fc8eb"

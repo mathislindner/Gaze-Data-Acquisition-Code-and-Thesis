@@ -29,15 +29,24 @@ def get_offset_from_local_csv(recording_id):
     offset = local_synchronisation_series['offset']
     return offset
 
+def find_closest_timestamp(timestamp, timestamps):
+    #find the closest timestamp in the timestamps array to the timestamp
+    closest_timestamp = min(timestamps, key=lambda x:abs(x-timestamp))
+    return closest_timestamp
+
 def add_events_from_csv_to_df(recording_id, df):
     recording_folder = os.path.join(recordings_folder, str(recording_id))
     local_synchronisation_series = pd.read_json(os.path.join(recording_folder, 'local_synchronisation.json'), typ='series', convert_dates=False)
     events_series = local_synchronisation_series[local_synchronisation_series.index.str.startswith('Event: ')]
+    #add a column event_idx to the dataframe
     df['events_idx'] = None
     #whenever the event time is met by the dataframe[timestamp [ns]] then add the event index to the event column for all events until the end of the dataframe
     for event in events_series.index:
         event_time = events_series[event]
         df.loc[df['timestamp [ns]'] >= event_time, 'events_idx'] = event[-1]
+    #only keep the event number for the last event for 2  (400frames) after the first occurence of the event
+
+
 
     return df
 
@@ -60,7 +69,6 @@ def find_element_pairs(seq_1, seq_2):
     #sequences are numpy arrays
     if seq_1.any() == False or seq_2.any() == False:
         print('empty sequence')
-        print(np.zeros(shape=(seq_1.shape[0])).shape)
 
         return np.zeros(shape=(seq_1.shape[0], 5))
     push_back = 3

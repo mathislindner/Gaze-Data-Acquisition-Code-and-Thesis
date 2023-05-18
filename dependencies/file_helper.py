@@ -1,10 +1,10 @@
 import zipfile
-import io 
 import os
 from shutil import copy,move,rmtree
-import datetime
-import glob
-from dependencies.constants import *
+try:
+    from dependencies.constants import *
+except ModuleNotFoundError:
+    from constants import *
 import numpy as np
 
 def decode_timestamp(timestamp_path):

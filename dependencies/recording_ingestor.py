@@ -4,7 +4,7 @@ from dependencies.synchronisation import correspond_cameras_and_gaze
 from dependencies.constants import *
 from dependencies.file_helper import move_subfolder_content_to_parent #, extract_frames
 from dependencies.frames_extractor import extract_frames, extract_depth_camera_frames, undistort_world_camera
-from dependencies.colmap_executer import run_colmap_automatic_reconstructor
+from dependencies.colmap_executer import run_colmap_automatic_reconstructor, clean_up_colmap_temp, run_colmap_exhaustive_matcher
 from pupilcloud import Api, ApiException
 import io
 import requests
@@ -58,12 +58,7 @@ class recordingCurator:
         self.recording_folder = os.path.join(recordings_folder,str(self.recording_id))
  
     def curate_recording(self):
-        #if path exists, don t curate
-        #TODO: move the path checking function from extract frames to here
         frames_path = os.path.join(self.recording_folder, camera_names[0].replace(" ","_"), "0.png")
-        #if os.path.exists(frames_path): #already in the exctract frames function
-        #    print("Recording already curated")
-        #    return
         
         #else extract frames
         extract_frames(self.recording_id)
@@ -71,7 +66,10 @@ class recordingCurator:
         correspond_cameras_and_gaze(self.recording_id)
         undistort_world_camera(self.recording_id)
         #run COLMAP on the world camera frames
-        #run_colmap(self.recording_id)
+        #run_colmap_exhaustive_matcher(self.recording_id)
+        #clean_up_colmap_temp()
+        #if WS_PATH/exhaustive_matching_done.txt exists, move files from scratch back to the recording folder
+        #use colmap results and laser data to create 3D labeling
 
 #Object that does the final exportation of the recording to the final folder (where we only keep the frames where the gaze is looking for 2 seconds...)
 class recordingExporter:
