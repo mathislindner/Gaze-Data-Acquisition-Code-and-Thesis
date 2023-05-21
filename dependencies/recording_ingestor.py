@@ -73,7 +73,7 @@ class recordingCurator:
         #TODO create laser recognition data
         #run COLMAP on the world camera frames
         run_colmap_exhaustive_matcher(self.recording_id)
-        run_colmap_automatic_reconstructor(self.recording_id)
+        #run_colmap_automatic_reconstructor(self.recording_id)
         clean_up_colmap_temp()
         #TODO: use colmap results and laser data to create 3D labeling
 
@@ -154,9 +154,3 @@ class recordingExporter:
                     for camera_frame in camera_frames:
                         os.system("copy " + os.path.join(self.recording_folder, camera_folder, str(camera_frame) + ".png") + " " + os.path.join(event_folder, camera_folder))
             
-                
-                
-        
-        
-#recording_exporter = recordingExporter("a0df90ce-1351-45bb-af10-72f91e67c43e")
-#recording_exporter.export_recording()
