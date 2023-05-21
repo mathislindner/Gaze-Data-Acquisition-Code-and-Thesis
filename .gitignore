@@ -1,9 +1,10 @@
-*/colmap_log/*
+configuration.yaml
+colmap_log/*
 #*/colmap_testing/*
 *ff0stuff_dupp
 *.db
 todo
-mathis/recordings/
+*/recordings/
 mathis/exports/
 # Byte-compiled / optimized / DLL files
 __pycache__/
