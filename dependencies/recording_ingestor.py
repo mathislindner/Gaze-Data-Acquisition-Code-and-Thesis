@@ -10,14 +10,19 @@ import io
 import requests
 import json
 import zipfile
+import yaml
+from yaml.loader import SafeLoader
 
+with open("configuration.yaml", 'r') as f:
+    config = yaml.load(f, Loader=SafeLoader)
+api_key = str(config["API_KEY"])
 #object to download process one recording
 class  recordingDownloader:
     def __init__(self, recording_id, api):
         self.workspace_id = workspace_id
         self.recording_id = recording_id
         self.recording_folder = recordings_folder + '/' + str(self.recording_id) 
-        self.api_key = "K2xko4e9Vt9VXTuThUngAG2yKTW2ZRcenhEFe9K4tiSA"
+        self.api_key = api_key
         self.api = api
     # process recording by id
     def download_recording_and_events(self):
@@ -65,11 +70,12 @@ class recordingCurator:
         extract_depth_camera_frames(self.recording_id)
         correspond_cameras_and_gaze(self.recording_id)
         undistort_world_camera(self.recording_id)
+        #TODO create laser recognition data
         #run COLMAP on the world camera frames
-        #run_colmap_exhaustive_matcher(self.recording_id)
-        #clean_up_colmap_temp()
-        #if WS_PATH/exhaustive_matching_done.txt exists, move files from scratch back to the recording folder
-        #use colmap results and laser data to create 3D labeling
+        run_colmap_exhaustive_matcher(self.recording_id)
+        run_colmap_automatic_reconstructor(self.recording_id)
+        clean_up_colmap_temp()
+        #TODO: use colmap results and laser data to create 3D labeling
 
 #Object that does the final exportation of the recording to the final folder (where we only keep the frames where the gaze is looking for 2 seconds...)
 class recordingExporter:

@@ -4,21 +4,22 @@
 #SBATCH --mem=32G
 
 #first argument should be the ws path
-WS_PATH=$1
+EM_WS_PATH=$1
 #move the images to a temporary folder on scratch_net
 #run colmap on the cluster
 #when the job is finished move the results back to the recording folder
 #move the results back to the recording folder
 
+echo "running Exhaustive Matcher on $EM_WS_PATH"
 
-COLMAP_OUT_PATH=$WS_PATH/exhaustive_matcher_out
-IMAGES_PATH=$WS_PATH/all_images
-DATABASE_PATH=$WS_PATH/database.db
+COLMAP_OUT_PATH=$EM_WS_PATH/exhaustive_matcher_out
+IMAGES_PATH=$EM_WS_PATH/all_images
+DATABASE_PATH=$EM_WS_PATH/database.db
 
 colmap feature_extractor \
    --database_path $DATABASE_PATH \
    --image_path $IMAGES_PATH \
-   --image_list_path $WS_PATH/world_images.txt \
+   --image_list_path $EM_WS_PATH/world_images.txt \
    --ImageReader.single_camera_per_image false \
    --ImageReader.single_camera_per_folder true \
    --ImageReader.camera_model PINHOLE \
@@ -38,12 +39,12 @@ colmap mapper \
     --database_path $DATABASE_PATH \
     --image_path $IMAGES_PATH \
     --output_path $COLMAP_OUT_PATH/only_world/sparse \
-    --image_list_path $WS_PATH/world_images.txt 
+    --image_list_path $EM_WS_PATH/world_images.txt 
 #################################################################################################
 colmap feature_extractor \
    --database_path $DATABASE_PATH \
    --image_path $IMAGES_PATH \
-   --image_list_path $WS_PATH/depth_images.txt \
+   --image_list_path $EM_WS_PATH/depth_images.txt \
    --ImageReader.single_camera_per_image false \
    --ImageReader.single_camera_per_folder true \
    --ImageReader.camera_model SIMPLE_RADIAL \
@@ -60,7 +61,7 @@ colmap mapper \
     --input_path $COLMAP_OUT_PATH/only_world/sparse/0 \
     --image_path $IMAGES_PATH \
     --output_path $COLMAP_OUT_PATH/world_and_depth/sparse \
-    --image_list_path $WS_PATH/depth_images.txt \
+    --image_list_path $EM_WS_PATH/depth_images.txt \
     --Mapper.ba_refine_extra_params 0 \
     --Mapper.ba_refine_focal_length 0 \
 
@@ -73,7 +74,7 @@ colmap bundle_adjuster \
     --BundleAdjustment.refine_extrinsics 0 
 
 #create text file that says that the exhaustive matching is done
-touch $WS_PATH/exhaustive_matching_done.txt
+touch $EM_WS_PATH/exhaustive_matching_done.txt
 
 ##################################################################################################
 
