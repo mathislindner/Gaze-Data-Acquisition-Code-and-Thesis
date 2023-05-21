@@ -185,7 +185,6 @@ def correspond_cameras_and_gaze(recording_id):
         depth_camera_timestamps_rel = depth_camera_timestamps - gaze_timestamps[0]
 
     best_pairs_gaze_left = find_element_pairs(gaze_timestamps_rel, left_timestamps_rel)
-    print("best pairs gaze left: " + str(best_pairs_gaze_left.shape))
     best_pairs_gaze_right = find_element_pairs(gaze_timestamps_rel, right_timestamps_rel)
     best_pairs_gaze_world = find_element_pairs(gaze_timestamps_rel, world_timestamps_rel)
     best_pairs_gaze_events = find_element_pairs(gaze_timestamps_rel, events_timestamps_rel)

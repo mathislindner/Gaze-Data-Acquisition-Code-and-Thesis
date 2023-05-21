@@ -114,11 +114,11 @@ def extract_frames(recording_id):
         out_log = ffmpeg_extract_frames(mp4_file, output_folder)
         num_extracted_frames = len([f for f in os.listdir(output_folder) if os.path.isfile(os.path.join(output_folder, f)) and '.png' in f])
 
-        if not len(timestamps_time[cam_i_]) == len(timestamps_ffprobe[cam_i_]) == num_extracted_frames:
-            print(f'Frame count mismathc form {cam_i}:')
-            print(f'.time file: {len(timestamps_time[cam_i_])}')
-            print(f'ffprobe: {len(timestamps_ffprobe[cam_i_])}')
-            print(f'ffmpeg: {num_extracted_frames}')
+        #if not len(timestamps_time[cam_i_]) == len(timestamps_ffprobe[cam_i_]) == num_extracted_frames:
+            #print(f'Frame count mismathc form {cam_i}:')
+            #print(f'.time file: {len(timestamps_time[cam_i_])}')
+            #print(f'ffprobe: {len(timestamps_ffprobe[cam_i_])}')
+            #print(f'ffmpeg: {num_extracted_frames}')
 
 
 #save the frames to png, save the timestamps to a csv file corresponding to the frame number
