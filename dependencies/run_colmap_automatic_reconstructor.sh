@@ -10,6 +10,7 @@ echo "running Automatic Reconstructor on $AR_WS_PATH"
 
 mkdir $AR_WS_PATH/automatic_recontructor_out
 
+set -e
 colmap automatic_reconstructor \
     --workspace_path $AR_WS_PATH/automatic_recontructor_out \
     --image_path $AR_WS_PATH/all_images 

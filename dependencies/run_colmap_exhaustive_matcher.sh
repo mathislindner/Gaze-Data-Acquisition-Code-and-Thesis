@@ -65,6 +65,7 @@ colmap mapper \
     --Mapper.ba_refine_extra_params 0 \
     --Mapper.ba_refine_focal_length 0 \
 
+set -e
 
 colmap bundle_adjuster \
     --input_path $COLMAP_OUT_PATH/world_and_depth/sparse \

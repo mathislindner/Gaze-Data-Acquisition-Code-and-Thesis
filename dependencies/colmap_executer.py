@@ -121,9 +121,3 @@ def clean_up_colmap_temp():
             shutil.copytree(os.path.join(scratch_net_folder_tmp, recording_id, "colmap_AR_ws"), os.path.join(recordings_folder, recording_id, "colmap_AR_ws"), dirs_exist_ok=True)
             #delete colmap ws from scratch_net_tmp
             shutil.rmtree(os.path.join(scratch_net_folder_tmp, recording_id, "colmap_AR_ws"))
-
-#run_colmap_exhaustive_matcher("b6a73239-5f5b-4fad-ad65-fcefb27ba4d8")
-#run_colmap_automatic_reconstructor("b6a73239-5f5b-4fad-ad65-fcefb27ba4d8")
-#run_colmap_exhaustive_matcher("ff0acdab-123d-41d8-bfd6-b641f99fc8eb_copy")
-
-#clean_up_colmap_temp()
