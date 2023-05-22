@@ -25,11 +25,29 @@ Keyboard:
     [q\ESC] Quit
 """
 
+import os
+import sys
+sys.path.insert(1, '/home/nipopovic/Code/gaze_data_acquisition')
+
 import math
 import time
 import cv2
 import numpy as np
 import pyrealsense2 as rs
+
+import open3d as o3d
+
+recordings_folder = '/home/nipopovic/MountedDirs/aegis_cvl/aegis_cvl_root/data/mathis/for_nikola'
+recording_id = "ff0acdab-123d-41d8-bfd6-b641f99fc8eb"
+# recordings_folder = '/home/nipopovic/MountedDirs/aegis_cvl/aegis_cvl_root/data/data_collection/recordings'
+# recording_id = '3c9b343b-c076-4c93-9098-fc693503e7ca'
+
+pointcloud_depth_camera_path = os.path.join(recordings_folder, recording_id, "depth_camera_pointcloud.ply")
+meshed_depth_camera_path = os.path.join(recordings_folder, recording_id,"meshed_depth_camera.ply")
+bag_file_path = os.path.join(recordings_folder, recording_id, "realsensed435.bag")
+
+select_frame = 95
+
 
 class AppState:
 
@@ -58,113 +76,6 @@ class AppState:
     @property
     def pivot(self):
         return self.translation + np.array((0, 0, self.distance), dtype=np.float32)
-
-############################################################################################################
-import os
-import sys
-REPO_DIR = '/home/nipopovic/Code/gaze_data_acquisition'
-sys.path.insert(1, f'{REPO_DIR}/mathis')
-from constants import *
-
-recording_id = "ff0acdab-123d-41d8-bfd6-b641f99fc8eb"
-
-pointcloud_depth_camera_path = os.path.join(recordings_folder, recording_id, "depth_camera_pointcloud.ply")
-meshed_depth_camera_path = os.path.join(recordings_folder, recording_id,"meshed_depth_camera.ply")
-bag_file_path = os.path.join(recordings_folder, recording_id, "realsensed435.bag")
-############################################################################################################
-
-state = AppState()
-
-# Configure depth and color streams
-pipeline = rs.pipeline()
-config = rs.config()
-config.enable_device_from_file(bag_file_path, repeat_playback=False)
-
-pipeline_wrapper = rs.pipeline_wrapper(pipeline)
-pipeline_profile = config.resolve(pipeline_wrapper)
-device = pipeline_profile.get_device()
-
-found_rgb = False
-for s in device.sensors:
-    if s.get_info(rs.camera_info.name) == 'RGB Camera':
-        found_rgb = True
-        break
-if not found_rgb:
-    print("The demo requires Depth camera with Color sensor")
-    exit(0)
-
-# Start streaming
-profile = pipeline.start(config)
-
-
-playback = profile.get_device().as_playback()
-playback.set_real_time(False)
-
-# Get stream profile and camera intrinsics
-profile = pipeline.get_active_profile()
-depth_profile = rs.video_stream_profile(profile.get_stream(rs.stream.depth))
-depth_intrinsics = depth_profile.get_intrinsics()
-color_profile = rs.video_stream_profile(profile.get_stream(rs.stream.color))
-color_intrinsics = color_profile.get_intrinsics()
-w, h = depth_intrinsics.width, depth_intrinsics.height
-#color_profile.get_extrinsics_to(depth_profile)
-
-# Processing blocks
-pc = rs.pointcloud()
-decimate = rs.decimation_filter()
-decimate.set_option(rs.option.filter_magnitude, 2 ** state.decimate)
-colorizer = rs.colorizer()
-
-
-def mouse_cb(event, x, y, flags, param):
-
-    if event == cv2.EVENT_LBUTTONDOWN:
-        state.mouse_btns[0] = True
-
-    if event == cv2.EVENT_LBUTTONUP:
-        state.mouse_btns[0] = False
-
-    if event == cv2.EVENT_RBUTTONDOWN:
-        state.mouse_btns[1] = True
-
-    if event == cv2.EVENT_RBUTTONUP:
-        state.mouse_btns[1] = False
-
-    if event == cv2.EVENT_MBUTTONDOWN:
-        state.mouse_btns[2] = True
-
-    if event == cv2.EVENT_MBUTTONUP:
-        state.mouse_btns[2] = False
-
-    if event == cv2.EVENT_MOUSEMOVE:
-
-        h, w = out.shape[:2]
-        dx, dy = x - state.prev_mouse[0], y - state.prev_mouse[1]
-
-        if state.mouse_btns[0]:
-            state.yaw += float(dx) / w * 2
-            state.pitch -= float(dy) / h * 2
-
-        elif state.mouse_btns[1]:
-            dp = np.array((dx / w, dy / h, 0), dtype=np.float32)
-            state.translation -= np.dot(state.rotation, dp)
-
-        elif state.mouse_btns[2]:
-            dz = math.sqrt(dx**2 + dy**2) * math.copysign(0.01, -dy)
-            state.translation[2] += dz
-            state.distance -= dz
-
-    if event == cv2.EVENT_MOUSEWHEEL:
-        dz = math.copysign(0.1, flags)
-        state.translation[2] += dz
-        state.distance -= dz
-
-    state.prev_mouse = (x, y)
-
-
-# cv2.namedWindow(state.WIN_NAME, cv2.WINDOW_AUTOSIZE)
-# cv2.resizeWindow(state.WIN_NAME, w, h)
-# cv2.setMouseCallback(state.WIN_NAME, mouse_cb)
 
 
 def project(v):
@@ -290,60 +201,182 @@ def pointcloud(out, verts, texcoords, color, painter=True):
     # perform uv-mapping
     out[i[m], j[m]] = color[u[m], v[m]]
 
+###############################################################################
+
+def plot_o3d_geometries(geometries_list, plotly=False):        
+    if plotly:
+        o3d.visualization.draw_plotly(geometries_list,  width=1920, height=1080)
+    else:    
+        vis = o3d.visualization.Visualizer()
+        vis.create_window()
+
+        for g in geometries_list:
+            vis.add_geometry(g)
+
+        vis.poll_events()
+        vis.update_renderer()
+        vis.run()
+        vis.destroy_window()
+
+
+state = AppState()
+
+# Configure depth and color streams
+pipeline = rs.pipeline()
+config = rs.config()
+config.enable_device_from_file(bag_file_path, repeat_playback=False)
+
+pipeline_wrapper = rs.pipeline_wrapper(pipeline)
+pipeline_profile = config.resolve(pipeline_wrapper)
+device = pipeline_profile.get_device()
+
+found_rgb = False
+for s in device.sensors:
+    if s.get_info(rs.camera_info.name) == 'RGB Camera':
+        found_rgb = True
+        break
+if not found_rgb:
+    print("The demo requires Depth camera with Color sensor")
+    exit(0)
+
+# Start streaming
+profile = pipeline.start(config)
+
+playback = profile.get_device().as_playback()
+playback.set_real_time(False)
+
+# Get stream profile and camera intrinsics
+profile = pipeline.get_active_profile()
+depth_profile = rs.video_stream_profile(profile.get_stream(rs.stream.depth))
+depth_intrinsics = depth_profile.get_intrinsics()
+color_profile = rs.video_stream_profile(profile.get_stream(rs.stream.color))
+color_intrinsics = color_profile.get_intrinsics()
+w, h = depth_intrinsics.width, depth_intrinsics.height
+depth_scale = profile.get_device().first_depth_sensor().get_depth_scale()
+#color_profile.get_extrinsics_to(depth_profile)
+
+# Processing blocks
+pc = rs.pointcloud()
+colorizer = rs.colorizer()
+# TODO REMOVE
+# decimate = rs.decimation_filter()
+# decimate.set_option(rs.option.filter_magnitude, 2 ** state.decimate)
+# TODO REMOVE
+
+# Create an align object
+# rs.align allows us to perform alignment of depth frames to others frames
+# The "align_to" is the stream type to which we plan to align depth frames.
+align_to = rs.stream.color
+align = rs.align(align_to)
 
 out = np.empty((h, w, 3), dtype=np.uint8)
-
+i=-1
 while True:
     # Grab camera data
     if not state.paused:
         # Wait for a coherent pair of frames: depth and color
         try:
             frames = pipeline.wait_for_frames()
+            # Align the depth frame to color frame
             playback.pause() #added this because else the frames are not saved correctly: https://stackoverflow.com/questions/58482414/frame-didnt-arrived-within-5000-while-reading-bag-file-pyrealsense2
         except:
             break
+        
+        i += 1
+        if not i == select_frame:
+            print('skip')
+            playback.resume()
+            continue
+
+        aligned_frames = align.process(frames)
 
         depth_frame = frames.get_depth_frame()
         color_frame = frames.get_color_frame()
+        aligned_depth_frame = aligned_frames.get_depth_frame()
+        aligned_color_frame = aligned_frames.get_color_frame()
         # depth_frame.as_depth_frame().get_distance(100,100)
 
         if not color_frame or not depth_frame:
-            continue
-        else:
-            print(f'\nFrame number: {frames.frame_number}')
-            if frames.frame_number < 90:
-                print('skip')
-                playback.resume()
-                continue
-
-            depth_frame = decimate.process(depth_frame)
-
-            # Grab new intrinsics (may be changed by decimation)
-            depth_intrinsics = rs.video_stream_profile(
-                depth_frame.profile).get_intrinsics()
-            
-            w, h = depth_intrinsics.width, depth_intrinsics.height
-
-            depth_image = np.asanyarray(depth_frame.get_data())
-            color_image = np.asanyarray(color_frame.get_data())
-
-            depth_colormap = np.asanyarray(
-                colorizer.colorize(depth_frame).get_data())
-
-            if state.color:
-                mapped_frame, color_source = color_frame, color_image
-            else:
-                mapped_frame, color_source = depth_frame, depth_colormap
-
-            points = pc.calculate(depth_frame)
-            pc.map_to(mapped_frame)
-
-            # Pointcloud data to arrays
-            v, t = points.get_vertices(), points.get_texture_coordinates()
-            verts = np.asanyarray(v).view(np.float32).reshape(-1, 3)  # xyz
-            texcoords = np.asanyarray(t).view(np.float32).reshape(-1, 2)  # uv
-
             playback.resume()
+            continue
+
+        print(f'\nFrame number: i:{i} rgb:{color_frame.frame_number}, depth:{depth_frame.frame_number}')
+
+        # depth_frame = decimate.process(depth_frame)
+
+        # # Grab new intrinsics (may be changed by decimation)
+        # depth_intrinsics = rs.video_stream_profile(
+        #     depth_frame.profile).get_intrinsics()
+        
+        w, h = depth_intrinsics.width, depth_intrinsics.height
+
+        depth_image = np.asanyarray(depth_frame.get_data())
+        color_image = np.asanyarray(color_frame.get_data())
+        aligned_depth_image = np.asanyarray(aligned_depth_frame.get_data())
+        aligned_color_image = np.asanyarray(aligned_color_frame.get_data())
+
+        # import matplotlib.pyplot as plt
+        # plt.imshow(color_image)
+        # plt.imshow(depth_image, alpha=0.6)
+        # plt.show()
+        # plt.close()
+        # plt.imshow(aligned_color_image)
+        # plt.imshow(aligned_depth_image, alpha=0.6)
+        # plt.show()
+        # plt.close()
+
+        # TODO #################################################################
+        # Create grid of pixel center positions in the uv space
+        u_min = 0; u_max  = w
+        v_min = 0; v_max  = h
+        half_du = 0.5
+        half_dv = 0.5
+        u_linspace = np.linspace(u_min + half_du, u_max - half_du, w)
+        v_linspace = np.linspace(v_min + half_dv, v_max - half_dv, h)
+        # Reverse vertical coordinate because [H=0,W=0] 
+        # corresponds to (u=-1, v=1).
+        u, v = np.meshgrid(u_linspace, v_linspace)
+        x = (u - color_intrinsics.ppx) / color_intrinsics.fx
+        y = (v - color_intrinsics.ppy) / color_intrinsics.fy
+        # Add 3rd coordinate and reshape to vector
+        xyz_3d = (aligned_depth_image[..., None] * depth_scale) * np.dstack((x, y, np.ones_like(u)))
+        xyz_3d = xyz_3d.reshape((h*w, 3))
+        rgb_3d = aligned_color_image.reshape((h*w, 3))/255.0
+        # TODO #################################################################
+
+        o3d_pointcloud = o3d.geometry.PointCloud()
+        o3d_pointcloud.points = o3d.utility.Vector3dVector(xyz_3d)
+        o3d_pointcloud.colors = o3d.utility.Vector3dVector(rgb_3d)
+        plot_o3d_geometries([o3d_pointcloud], plotly=True)
+        
+        ########################################################################
+
+        depth_colormap = np.asanyarray(
+            colorizer.colorize(depth_frame).get_data())
+
+        if state.color:
+            mapped_frame, color_source = color_frame, color_image
+        else:
+            mapped_frame, color_source = depth_frame, depth_colormap
+
+        points = pc.calculate(depth_frame)
+        pc.map_to(mapped_frame)
+
+
+        # Pointcloud data to arrays
+        v, t = points.get_vertices(), points.get_texture_coordinates()
+        verts = np.asanyarray(v).view(np.float32).reshape(-1, 3)  # xyz
+        texcoords = np.asanyarray(t).view(np.float32).reshape(-1, 2)  # uv
+
+
+        o3d_pointcloud = o3d.geometry.PointCloud()
+        o3d_pointcloud.points = o3d.utility.Vector3dVector(verts)
+        #o3d_pointcloud.colors = o3d.utility.Vector3dVector(colmap_rgb_colors)
+        plot_o3d_geometries([o3d_pointcloud], plotly=True)
+
+        exit()
+
+        playback.resume()
     # Render
     now = time.time()
 
@@ -366,46 +399,9 @@ while True:
         axes(out, view(state.pivot), state.rotation, thickness=4)
 
     
-    import open3d as o3d
-    o3d_pointcloud = o3d.geometry.PointCloud()
-    o3d_pointcloud.points = o3d.utility.Vector3dVector(verts)
-    #o3d_pointcloud.colors = o3d.utility.Vector3dVector(colmap_rgb_colors)
-    
-    o3d.visualization.draw_plotly([o3d_pointcloud],  width=1920, height=1080)
 
     dt = time.time() - now
 
-    # cv2.setWindowTitle(
-    #     state.WIN_NAME, "RealSense (%dx%d) %dFPS (%.2fms) %s" %
-    #     (w, h, 1.0/dt, dt*1000, "PAUSED" if state.paused else ""))
-
-    # cv2.imshow(state.WIN_NAME, out)
-    # key = cv2.waitKey(1)
-
-    # if key == ord("r"):
-    #     state.reset()
-
-    # if key == ord("p"):
-    #     state.paused ^= True
-
-    # if key == ord("d"):
-    #     state.decimate = (state.decimate + 1) % 3
-    #     decimate.set_option(rs.option.filter_magnitude, 2 ** state.decimate)
-
-    # if key == ord("z"):
-    #     state.scale ^= True
-
-    # if key == ord("c"):
-    #     state.color ^= True
-
-    # if key == ord("s"):
-    #     cv2.imwrite('./out.png', out)
-
-    # if key == ord("e"):
-    #     points.export_to_ply('./out.ply', mapped_frame)
-
-    # if key in (27, ord("q")) or cv2.getWindowProperty(state.WIN_NAME, cv2.WND_PROP_AUTOSIZE) < 0:
-    #     break
 
 # Stop streaming
 pipeline.stop()
