@@ -5,9 +5,14 @@
 import numpy as np
 import os
 import pandas as pd
-from dependencies.constants import *
+try:
+    from dependencies.constants import *
+    from dependencies.file_helper import decode_timestamp, get_system_start_ts
+except ModuleNotFoundError:
+    from constants import *
+    from file_helper import decode_timestamp, get_system_start_ts
 import json
-from dependencies.file_helper import decode_timestamp, get_system_start_ts
+
 
 #returns the offset between the pupil labs time and the system time using the android logs command 
 def get_offset_from_log(recording_id):
@@ -40,14 +45,15 @@ def add_events_from_csv_to_df(recording_id, df):
     events_series = local_synchronisation_series[local_synchronisation_series.index.str.startswith('Event: ')]
     #add a column event_idx to the dataframe
     df['events_idx'] = None
-    #whenever the event time is met by the dataframe[timestamp [ns]] then add the event index to the event column for all events until the end of the dataframe
+    #add the event number to the row where the time is closest to the event time
+    idx_closest = []
     for event in events_series.index:
         event_time = events_series[event]
-        df.loc[df['timestamp [ns]'] >= event_time, 'events_idx'] = event[-1]
-    #only keep the event number for the last event for 2  (400frames) after the first occurence of the event
-
-
-
+        idx_closest.append(df.index[df['timestamp [ns]'].apply(lambda x: abs(x - event_time)).idxmin()])
+    
+    df.loc[idx_closest, 'events_idx'] = events_series.index
+    #fill for 2 seconds after the event, which is 400 frames
+    df['events_idx'] = df['events_idx'].ffill(limit=400)
     return df
 
 def find_element_pairs(seq_1, seq_2):
@@ -233,6 +239,3 @@ def correspond_cameras_and_gaze(recording_id):
     gaze_df["timestamp [ns]"] = gaze_df["timestamp [ns]"] + get_offset_from_local_csv(recording_id)/scale_factor #FIXME: check if - or +
     gaze_df = add_events_from_csv_to_df(recording_id, gaze_df)
     gaze_df.to_csv(recording_folder + "/full_df.csv", index=False)
-
-#correspond_cameras_and_gaze("50bd29b9-0ef2-425c-8f78-b9275ce3f32f")
-#print(get_offset("82e52db9-1cac-495d-99dd-bebb51c393a0"))
