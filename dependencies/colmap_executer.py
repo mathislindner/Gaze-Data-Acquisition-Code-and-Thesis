@@ -45,7 +45,6 @@ def copy_ws_to_scratch(recording_id, colmap_ws_folder):
     shutil.copytree(colmap_ws_folder, ws_scratch_path, dirs_exist_ok=True)
     return ws_scratch_path
 
-#FIXME: do the same thing that is in the exhaustive amtcher with moving the ws to scratch
 def run_colmap_automatic_reconstructor(recording_id):
     if os.path.exists(os.path.join(recordings_folder,str(recording_id), "colmap_AR_ws","automatic_reconstruction_done.txt")):
         print("Automatic reconstructor already run")
@@ -88,7 +87,6 @@ def run_colmap_exhaustive_matcher(recording_id):
     colmap_EM_ws_folder = os.path.join(recording_folder, "colmap_EM_ws")
 
     #create the colmap workspace folder
-    #TODO: create 2 subfolders in images, one for the world camera and one for the depth camera
     if not os.path.exists(colmap_EM_ws_folder):
         os.makedirs(colmap_EM_ws_folder)
 

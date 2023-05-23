@@ -13,11 +13,11 @@ from yaml.loader import SafeLoader
 with open("configuration.yaml", 'r') as f:
     config = yaml.load(f, Loader=SafeLoader)
 api_key = str(config["API_KEY"])
-#API object for all the requests, #FIXME: put in a config file, and create api object in the recording ingestor
+#API object for all the requests
 api = Api(api_key=api_key, host="https://api.cloud.pupil-labs.com")
 print(api.get_profile().status)
 # Returns a list of recordings
-#FIXME do not include unprocessed recordings (or do a try except in the download function)
+#FIXME do not include unprocessed recordings (unprocessed in the cloud) (or do a try except in the download function)
 def get_recordings():
     recordings = api.get_recordings().result 
     recording_ids = [recording.id for recording in recordings]

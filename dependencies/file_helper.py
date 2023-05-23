@@ -18,8 +18,6 @@ def move_subfolder_content_to_parent(downloads_path):
         if os.path.isdir(os.path.join(downloads_path, files)):
             subfolder_name = files
     subfolder_files_names = os.listdir(os.path.join(downloads_path, subfolder_name))
-    #TODO: this implementation does not work: it creates too many / in the path
-    #subfolder_name = z.filelist[0].filename.split(os.sep)[0]
     #move all files to parent folder and delete folder
     for filename in subfolder_files_names:
         move(os.path.join(downloads_path, subfolder_name, filename), os.path.join(parent_path, filename))
