@@ -13,8 +13,8 @@ import os
 
 import pyrealsense2 as rs
 
-recording_id = "3c9b343b-c076-4c93-9098-fc693503e7ca"
 recording_id = "ff0acdab-123d-41d8-bfd6-b641f99fc8eb"
+#recording_id = "3c9b343b-c076-4c93-9098-fc693503e7ca"
 recording_path = os.path.join(recordings_folder, recording_id)
 
 def get_colmap_sparse_model(recording_path):
@@ -251,6 +251,8 @@ def get_scale(colmap_images, colmap_points, xyz_d_i):
 
 #input are numpy arrays of shape pointcloud: (n, 3), R: (3, 3), t: (3), scale: float
 def transform_pointcloud(pointcloud, R, t, scale):
+    # Be careful that to properly apply scale to align colmap to depth camera
+    # the transformation should be from world_2_depth before applying the scale
     return (R @ pointcloud.T + t[:, None]).T * scale
 
 #from colmap to depth camera
@@ -282,7 +284,7 @@ def get_transformed_colmap_as_o3d(colmap_cameras, colmap_images, colmap_points, 
 
     o3d_pointcloud = o3d.geometry.PointCloud()
     o3d_pointcloud.points = o3d.utility.Vector3dVector(transformed_colmap_points[::downsample])
-    o3d_pointcloud.colors = o3d.utility.Vector3dVector(colmap_rgb_colors[::downsample])
+    o3d_pointcloud.colors = o3d.utility.Vector3dVector(colmap_rgb_colors[::downsample]/255.0)
     return o3d_pointcloud
 
 #returns the transformed colmap pointcloud and colors as o3d pointcloud
@@ -319,12 +321,15 @@ color_d_i, depth_d_i, xyz_d_i = get_depth_cam_model(recording_path, select_frame
 
 xyz_d_i_1 = xyz_d_i[295:481, 0:393].reshape(-1, 3)
 color_d_i_1 = color_d_i[295:481, 0:393].reshape(-1, 3)
-xyz_d_i_2 = xyz_d_i[120:245, 370:481].reshape(-1, 3)
-color_d_i_2 = color_d_i[120:245, 370:481].reshape(-1, 3)
-xyz_d_i_sel = xyz_d_i_1
-color_d_i_sel = color_d_i_1
-# xyz_d_i_sel = np.concatenate([xyz_d_i_1, xyz_d_i_2], axis=0)
-# color_d_i_sel = np.concatenate([color_d_i_1, color_d_i_2], axis=0)
+xyz_d_i_2 = xyz_d_i[206:346, 505:].reshape(-1, 3)
+color_d_i_2 = color_d_i[206:346, 505:].reshape(-1, 3)
+# xyz_d_i_sel = xyz_d_i_1
+# color_d_i_sel = color_d_i_1
+xyz_d_i_sel = np.concatenate([xyz_d_i_1, xyz_d_i_2], axis=0)
+color_d_i_sel = np.concatenate([color_d_i_1, color_d_i_2], axis=0)
+# TODO For mathis: Comment out below 2 lines to see colors in the aprtial depth pointcloud
+color_d_i_sel = np.zeros_like(xyz_d_i_sel)
+color_d_i_sel[:, 1] = 255.0
 
 sparse_scale = get_scale(sparse_images, sparse_points, xyz_d_i)
 dense_scale = get_scale(dense_images, dense_points, xyz_d_i)
@@ -344,16 +349,10 @@ colmap_sparse_pointcloud = get_transformed_colmap_as_o3d(sparse_cameras, sparse_
 colmap_dense_pointcloud = get_transformed_colmap_as_o3d(dense_cameras, dense_images, dense_points, dense_scale, downsample)
 colmap_dense_ply_pointcloud = get_transformed_colmap_ply_as_o3d(dense_cameras, dense_images, dense_points, dense_scale).voxel_down_sample(voxel_size=0.001)
 
-plot_o3d_geometries([colmap_sparse_pointcloud], plotly=remote_vis)
-plot_o3d_geometries([depth_pointcloud], plotly=remote_vis)
-plot_o3d_geometries([depth_pointcloud_sel], plotly=remote_vis)
-plot_o3d_geometries([depth_pointcloud, colmap_sparse_pointcloud], plotly=remote_vis)
-#plot_o3d_geometries([depth_pointcloud, colmap_dense_pointcloud], plotly=remote_vis)
-#plot_o3d_geometries([depth_pointcloud, colmap_dense_ply_pointcloud], plotly=remote_vis)
 
 
-pointcloud_xyz_tmp = np.asarray(colmap_dense_pointcloud.points)
-pointcloud_rgb_tmp = np.asarray(colmap_dense_pointcloud.colors)
+pointcloud_xyz_tmp = np.asarray(colmap_sparse_pointcloud.points)
+pointcloud_rgb_tmp = np.asarray(colmap_sparse_pointcloud.colors)
 h_d, w_d = xyz_d_i.shape[0],  xyz_d_i.shape[1]
 colmap_proj_d_tmp = np.zeros((h_d, w_d, 3))
 colmap_proj_d_count_tmp = np.zeros((h_d, w_d, 1))
@@ -370,10 +369,19 @@ pointcloud_uv_tmp = pointcloud_uv_tmp[mask_tmp]
 pointcloud_rgb_tmp = pointcloud_rgb_tmp[mask_tmp]
 
 for i, (u, v) in enumerate(pointcloud_uv_tmp):
-    colmap_proj_d_tmp[v, u, :] = pointcloud_rgb_tmp[i, :]
+    colmap_proj_d_tmp[v, u, :] += pointcloud_rgb_tmp[i, :]
     colmap_proj_d_count_tmp[v, u, 0] += 1.0
 colmap_proj_d_count_tmp[colmap_proj_d_count_tmp == 0] = 1.0
 colmap_proj_d_tmp /= colmap_proj_d_count_tmp
+colmap_proj_d_tmp[np.linalg.norm(colmap_proj_d_tmp, axis=-1) == 0.0] = np.ones(3)
+
+plot_o3d_geometries([colmap_sparse_pointcloud], plotly=remote_vis)
+plot_o3d_geometries([depth_pointcloud], plotly=remote_vis)
+plot_o3d_geometries([depth_pointcloud_sel], plotly=remote_vis)
+plot_o3d_geometries([depth_pointcloud_sel, colmap_sparse_pointcloud], plotly=remote_vis) # TODO For Mathis: check this plot out (table/checkerboard overlapping)
+plot_o3d_geometries([depth_pointcloud, colmap_sparse_pointcloud], plotly=remote_vis)
+#plot_o3d_geometries([depth_pointcloud, colmap_dense_pointcloud], plotly=remote_vis)
+#plot_o3d_geometries([depth_pointcloud, colmap_dense_ply_pointcloud], plotly=remote_vis)
 
 import matplotlib.pyplot as plt
 plt.figure()
