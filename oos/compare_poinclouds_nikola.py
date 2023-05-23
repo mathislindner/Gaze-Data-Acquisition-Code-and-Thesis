@@ -20,13 +20,23 @@ recording_path = os.path.join(recordings_folder, recording_id)
 def get_colmap_sparse_model(recording_path):
     # 'colmap_EM_ws/exhaustive_matcher_out/world_and_depth/sparse'
     # "colmap_ws/colmap_out_1/sparse"
-    path = os.path.join(recording_path, "colmap_ws/colmap_out_1/sparse") 
+    path = os.path.join(recording_path, "colmap_EM_ws/exhaustive_matcher_out/world_and_depth/sparse")
+    if not os.path.isdir(path):
+        path = os.path.join(recording_path, "colmap_ws/colmap_out_1/sparse")
+        if not os.path.isdir(path):
+            raise NotADirectoryError
+        
     cameras, images, points_3d = read_write_model.read_model(path, ".bin")
     return cameras, images, points_3d
 
 
 def get_colmap_dense_model(recording_path):
-    path = os.path.join(recording_path, "colmap_ws/automatic_recontructor/dense/0/sparse")
+    path = os.path.join(recording_path, "colmap_EM_ws/exhaustive_matcher_out/world_and_depth/dense")
+    if not os.path.isdir(path):
+        path = os.path.join(recording_path, "colmap_ws/automatic_recontructor/dense/0/sparse")
+        if not os.path.isdir(path):
+            raise NotADirectoryError
+        
     cameras, images, points_3d = read_write_model.read_model(path, ".bin")
     return cameras, images, points_3d
 
@@ -296,10 +306,25 @@ def get_transformed_colmap_ply_as_o3d(colmap_cameras, colmap_images, colmap_poin
     return o3d_pointcloud
 
 
+remote_vis = False
+downsample = 4
 
 sparse_cameras, sparse_images, sparse_points = get_colmap_sparse_model(recording_path)
-dense_cameras, dense_images, dense_points = get_colmap_dense_model(recording_path)
+try:
+    dense_cameras, dense_images, dense_points = get_colmap_dense_model(recording_path)
+except:
+    print('Dense model not available, using sparse instead')
+    dense_cameras = sparse_cameras; dense_images = sparse_images; dense_points = sparse_points
 color_d_i, depth_d_i, xyz_d_i = get_depth_cam_model(recording_path, select_frame=95)
+
+xyz_d_i_1 = xyz_d_i[295:481, 0:393].reshape(-1, 3)
+color_d_i_1 = color_d_i[295:481, 0:393].reshape(-1, 3)
+xyz_d_i_2 = xyz_d_i[120:245, 370:481].reshape(-1, 3)
+color_d_i_2 = color_d_i[120:245, 370:481].reshape(-1, 3)
+xyz_d_i_sel = xyz_d_i_1
+color_d_i_sel = color_d_i_1
+# xyz_d_i_sel = np.concatenate([xyz_d_i_1, xyz_d_i_2], axis=0)
+# color_d_i_sel = np.concatenate([color_d_i_1, color_d_i_2], axis=0)
 
 sparse_scale = get_scale(sparse_images, sparse_points, xyz_d_i)
 dense_scale = get_scale(dense_images, dense_points, xyz_d_i)
@@ -309,22 +334,26 @@ print("dense scale: ", dense_scale)
 
 # Depth pointcloud
 depth_pointcloud = o3d.geometry.PointCloud()
-downsample = 4
 depth_pointcloud.points = o3d.utility.Vector3dVector(xyz_d_i.reshape((xyz_d_i.shape[0]*xyz_d_i.shape[1], 3))[::downsample])
 depth_pointcloud.colors = o3d.utility.Vector3dVector(color_d_i.reshape((color_d_i.shape[0]*color_d_i.shape[1], 3))[::downsample]/255.0)
+depth_pointcloud_sel = o3d.geometry.PointCloud()
+depth_pointcloud_sel.points = o3d.utility.Vector3dVector(xyz_d_i_sel[::downsample])
+depth_pointcloud_sel.colors = o3d.utility.Vector3dVector(color_d_i_sel[::downsample]/255.0)
 
-colmap_sparse_pointcloud = get_transformed_colmap_as_o3d(sparse_cameras, sparse_images, sparse_points, sparse_scale, downsample)
+colmap_sparse_pointcloud = get_transformed_colmap_as_o3d(sparse_cameras, sparse_images, sparse_points, sparse_scale, downsample=1)
 colmap_dense_pointcloud = get_transformed_colmap_as_o3d(dense_cameras, dense_images, dense_points, dense_scale, downsample)
 colmap_dense_ply_pointcloud = get_transformed_colmap_ply_as_o3d(dense_cameras, dense_images, dense_points, dense_scale).voxel_down_sample(voxel_size=0.001)
 
-#plot_o3d_geometries([depth_pointcloud, colmap_sparse_pointcloud], plotly=True)
-#plot_o3d_geometries([depth_pointcloud, colmap_dense_pointcloud], plotly=True)
-#plot_o3d_geometries([depth_pointcloud, colmap_dense_ply_pointcloud], plotly=True)
-#plot_o3d_geometries([depth_pointcloud], plotly=True)
+plot_o3d_geometries([colmap_sparse_pointcloud], plotly=remote_vis)
+plot_o3d_geometries([depth_pointcloud], plotly=remote_vis)
+plot_o3d_geometries([depth_pointcloud_sel], plotly=remote_vis)
+plot_o3d_geometries([depth_pointcloud, colmap_sparse_pointcloud], plotly=remote_vis)
+#plot_o3d_geometries([depth_pointcloud, colmap_dense_pointcloud], plotly=remote_vis)
+#plot_o3d_geometries([depth_pointcloud, colmap_dense_ply_pointcloud], plotly=remote_vis)
 
 
-pointcloud_xyz_tmp = np.asarray(colmap_dense_ply_pointcloud.points)
-pointcloud_rgb_tmp = np.asarray(colmap_dense_ply_pointcloud.colors)
+pointcloud_xyz_tmp = np.asarray(colmap_dense_pointcloud.points)
+pointcloud_rgb_tmp = np.asarray(colmap_dense_pointcloud.colors)
 h_d, w_d = xyz_d_i.shape[0],  xyz_d_i.shape[1]
 colmap_proj_d_tmp = np.zeros((h_d, w_d, 3))
 colmap_proj_d_count_tmp = np.zeros((h_d, w_d, 1))
@@ -346,16 +375,28 @@ for i, (u, v) in enumerate(pointcloud_uv_tmp):
 colmap_proj_d_count_tmp[colmap_proj_d_count_tmp == 0] = 1.0
 colmap_proj_d_tmp /= colmap_proj_d_count_tmp
 
-
 import matplotlib.pyplot as plt
 plt.figure()
 plt.imshow(color_d_i)
 plt.imshow(colmap_proj_d_tmp, alpha=0.8)
-plt.savefig('colmap_proj_2_dcam_matplotlib_overlay.png')
-#plt.close()
+if remote_vis:
+    plt.savefig('colmap_proj_2_dcam_matplotlib_overlay.png')
+else:
+    plt.show()
+plt.close()
 
 plt.figure()
 plt.imshow(colmap_proj_d_tmp)
-plt.savefig('colmap_proj_2_dcam.png')
-#plt.close()
+if remote_vis:
+    plt.savefig('colmap_proj_2_dcam.png')
+else:
+    plt.show()
+plt.close()
 
+plt.figure()
+plt.imshow(color_d_i)
+if remote_vis:
+    plt.savefig('depth_img.png')
+else:
+    plt.show()
+plt.close()
