@@ -12,7 +12,7 @@ username = getpass.getuser()
 host = socket.gethostname()
 if username == 'nipopovic' and host == 'archer':
     recordings_folder = "/home/nipopovic/MountedDirs/aegis_cvl/aegis_cvl_root/data/data_collection/test_recordings/"
-    #recordings_folder = "/home/nipopovic/MountedDirs/aegis_cvl/aegis_cvl_root/data/data_collection/recordings"
+    #recordings_folder = "/home/nipopovic/MountedDirs/aegis_cvl/aegis_cvl_root/data/data_collection/recordings/"
 elif username == 'Mathis':
     recordings_folder = "C:/Users/Mathis/Documents/GitHub/gaze_data_acquisition/mathis/recordings/"
 elif username == 'mathi':
