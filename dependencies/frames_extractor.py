@@ -147,6 +147,10 @@ def extract_depth_camera_frames(recording_id):
     playback = profile.get_device().as_playback()
     playback.set_real_time(False)
     
+    #align the depth and color frames
+    align_to = rs.stream.color
+    align = rs.align(align_to)
+
     i = 0
 
     timestamps = []
@@ -159,8 +163,9 @@ def extract_depth_camera_frames(recording_id):
             playback.pause() #added this because else the frames are not saved correctly: https://stackoverflow.com/questions/58482414/frame-didnt-arrived-within-5000-while-reading-bag-file-pyrealsense2
         except:
             break
-        color_frame = frames.get_color_frame()
-        depth_frame = frames.get_depth_frame()
+        aligned_frames = align.process(frames)
+        color_frame = aligned_frames.get_color_frame()
+        depth_frame = aligned_frames.get_depth_frame()
         if not color_frame or not depth_frame:
             continue
         else:
