@@ -1,13 +1,13 @@
 try:
     from dependencies.constants import *
     from dependencies.file_helper import copy_frames_to_new_folder
-    from dependencies.colmap_helpers import read_write_model
+    from dependencies.colmap_helpers.read_write_model import read_model, write_cameras_text, write_images_text, write_points3D_text
 except:
     from constants import *
     from file_helper import copy_frames_to_new_folder
-    from colmap_helpers import read_write_model
+    from colmap_helpers.read_write_model import read_model, write_cameras_text, write_images_text, write_points3D_text
 import os 
-import numpy as np
+import json
 import shutil
 
 def create_image_folders(recording_id, colmap_ws_folder):
@@ -77,7 +77,7 @@ def run_colmap_exhaustive_matcher(recording_id):
         return
     #if path exists on scratch_net, copy it back to recordings folder and delete it from scratch_net
     if os.path.exists(os.path.join(scratch_net_folder_tmp, str(recording_id), "colmap_EM_ws", "exhaustive_matching_done.txt")):
-        clean_up_colmap_temp()
+        clean_up_temp_and_export_colmap()
 
     current_working_dir = os.getcwd()
     runcolmap_batch_file = os.path.join(current_working_dir, 'dependencies', "run_colmap_exhaustive_matcher.sh")
@@ -101,7 +101,7 @@ def run_colmap_exhaustive_matcher(recording_id):
     os.system(command)
 
 
-def clean_up_colmap_temp():
+def clean_up_temp_and_export_colmap():
     #copy ws from scratch_net to recordings folder if exhaustive_matching_done.txt exists
     recording_ids = os.listdir(scratch_net_folder_tmp)
     for recording_id in recording_ids:
@@ -112,6 +112,8 @@ def clean_up_colmap_temp():
             shutil.copytree(os.path.join(scratch_net_folder_tmp, recording_id, "colmap_EM_ws"), os.path.join(recordings_folder, recording_id, "colmap_EM_ws"), dirs_exist_ok=True)
             #delete colmap ws from scratch_net_tmp
             shutil.rmtree(os.path.join(scratch_net_folder_tmp, recording_id, "colmap_EM_ws"))
+            #after having moved the folders, export colmap files (images, cameras, points3D) to a folder in the recordings folder
+            export_colmap_ws_to_text(recording_id, os.path.join(recordings_folder, recording_id, "colmap_EM_ws"))
         #check AR
         if os.path.exists(os.path.join(scratch_net_folder_tmp, recording_id, "colmap_AR_ws", "automatic_reconstruction_done.txt")):
             print("copying colmap ws from scratch_net to recordings folder for recording: " + recording_id)
@@ -119,3 +121,24 @@ def clean_up_colmap_temp():
             shutil.copytree(os.path.join(scratch_net_folder_tmp, recording_id, "colmap_AR_ws"), os.path.join(recordings_folder, recording_id, "colmap_AR_ws"), dirs_exist_ok=True)
             #delete colmap ws from scratch_net_tmp
             shutil.rmtree(os.path.join(scratch_net_folder_tmp, recording_id, "colmap_AR_ws"))
+            #after having moved the folders, export colmap files (images, cameras, points3D) to a folder in the recordings folder
+            export_colmap_ws_to_text(recording_id, os.path.join(recordings_folder, recording_id, "colmap_AR_ws"))
+
+def export_colmap_ws_to_text(recording_id, colmap_ws_folder):
+    colmap_type = colmap_ws_folder.split("_")[-2]
+    recording_folder = os.path.join(recordings_folder, str(recording_id))
+    colmap_export_folder = os.path.join(recording_folder, "colmap_{}_export".format(colmap_type))
+    if not os.path.exists(colmap_export_folder):
+        os.makedirs(colmap_export_folder)
+    if colmap_type == "EM":
+        model_path = os.path.join(colmap_ws_folder, 'exhaustive_matcher_out', 'world_and_depth','sparse')
+        cameras, images, points3D = read_model(os.path.join(model_path), ".bin")
+    elif colmap_type == "AR":
+        print("colmap AR export not supported yet")
+    else:
+        print("colmap type not recognized")
+        return
+    #export to text file
+    write_cameras_text(cameras, os.path.join(colmap_export_folder, "cameras.txt"))
+    write_images_text(images, os.path.join(colmap_export_folder, "images.txt"))
+    write_points3D_text(points3D, os.path.join(colmap_export_folder, "points3D.txt"))
