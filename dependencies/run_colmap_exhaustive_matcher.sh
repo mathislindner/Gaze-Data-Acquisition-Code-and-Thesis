@@ -47,8 +47,11 @@ colmap feature_extractor \
    --image_list_path $EM_WS_PATH/depth_images.txt \
    --ImageReader.single_camera_per_image false \
    --ImageReader.single_camera_per_folder true \
-   --ImageReader.camera_model SIMPLE_RADIAL \
-   --ImageReader.camera_params "615.901118, 320, 240, 0.042837"
+   --ImageReader.camera_model PINHOLE \
+   --ImageReader.camera_params "766.9718099563071, 766.4976087911597, 553.5783632028212, 543.5611312035519"\
+   --ImageReader.camera_params "616.2463989257812, 616.6265258789062, 312.24853515625, 250.3607940673828"\
+   #--ImageReader.camera_model SIMPLE_RADIAL \
+   #--ImageReader.camera_params "615.901118, 320, 240, 0.042837"
 
 colmap exhaustive_matcher \
    --database_path $DATABASE_PATH

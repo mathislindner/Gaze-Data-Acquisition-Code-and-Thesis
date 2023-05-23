@@ -1,7 +1,8 @@
 import sys
 sys.path.insert(1, '/home/nipopovic/Code/gaze_data_acquisition')
-
+sys.path.insert(1, '/scratch_net/snapo/mlindner/docs/gaze_data_acquisition')
 from dependencies.constants import *
+
 import numpy as np
 try:
     import open3d as o3d
@@ -15,7 +16,6 @@ import pyrealsense2 as rs
 recording_id = "3c9b343b-c076-4c93-9098-fc693503e7ca"
 recording_id = "ff0acdab-123d-41d8-bfd6-b641f99fc8eb"
 recording_path = os.path.join(recordings_folder, recording_id)
-
 
 def get_colmap_sparse_model(recording_path):
     # 'colmap_EM_ws/exhaustive_matcher_out/world_and_depth/sparse'

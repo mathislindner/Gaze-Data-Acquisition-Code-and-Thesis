@@ -4,7 +4,7 @@ from dependencies.synchronisation import correspond_cameras_and_gaze
 from dependencies.constants import *
 from dependencies.file_helper import move_subfolder_content_to_parent #, extract_frames
 from dependencies.frames_extractor import extract_frames, extract_depth_camera_frames, undistort_world_camera
-from dependencies.colmap_executer import run_colmap_automatic_reconstructor, clean_up_colmap_temp, run_colmap_exhaustive_matcher
+from dependencies.colmap_executer import run_colmap_automatic_reconstructor, clean_up_temp_and_export_colmap, run_colmap_exhaustive_matcher
 from pupilcloud import Api, ApiException
 import io
 import requests
@@ -70,11 +70,10 @@ class recordingCurator:
         extract_depth_camera_frames(self.recording_id)
         correspond_cameras_and_gaze(self.recording_id)
         undistort_world_camera(self.recording_id)
-        #TODO create laser recognition data
         #run COLMAP on the world camera frames
         run_colmap_exhaustive_matcher(self.recording_id)
         #run_colmap_automatic_reconstructor(self.recording_id)
-        clean_up_colmap_temp()
+        clean_up_temp_and_export_colmap()
         #TODO: use colmap results and laser data to create 3D labeling
 
 #Object that does the final exportation of the recording to the final folder (where we only keep the frames where the gaze is looking for 2 seconds...)
