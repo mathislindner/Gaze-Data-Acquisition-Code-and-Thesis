@@ -143,30 +143,52 @@ def extract_depth_camera_frames(recording_id):
     pipeline = rs.pipeline()
     config = rs.config()
     config.enable_device_from_file(os.path.join(recording_folder, "realsensed435.bag"), repeat_playback=False)
+    pipeline_wrapper = rs.pipeline_wrapper(pipeline)
+    pipeline_profile = config.resolve(pipeline_wrapper)
+    device = pipeline_profile.get_device()
+    
+
     profile = pipeline.start(config)
     playback = profile.get_device().as_playback()
     playback.set_real_time(False)
     
+    profile = pipeline.get_active_profile()
+    depth_profile = rs.video_stream_profile(profile.get_stream(rs.stream.depth))
+    depth_intrinsics = depth_profile.get_intrinsics()
+    color_profile = rs.video_stream_profile(profile.get_stream(rs.stream.color))
+    color_intrinsics = color_profile.get_intrinsics()
+    depth_scale = profile.get_device().first_depth_sensor().get_depth_scale()
+
+    
     i = 0
+    align_to = rs.stream.color
+    align = rs.align(align_to)
 
     timestamps = []
     depth_images_list = []
     #while the bag file is not finished
-    j = 0
     while True:
         try:
             frames = pipeline.wait_for_frames()
             playback.pause() #added this because else the frames are not saved correctly: https://stackoverflow.com/questions/58482414/frame-didnt-arrived-within-5000-while-reading-bag-file-pyrealsense2
         except:
             break
-        color_frame = frames.get_color_frame()
+        #align the depth and color frames
+        #FIXME: this should be done with only one align object, but it doesn't work (try putting it outside the loop)
+        
+        aligned_frames = align.process(frames)
+
         depth_frame = frames.get_depth_frame()
-        if not color_frame or not depth_frame:
-            continue
+        color_frame = frames.get_color_frame()
+        aligned_depth_frame = aligned_frames.get_depth_frame()
+        aligned_color_frame = aligned_frames.get_color_frame()
+
+        if not color_frame or not depth_frame or not aligned_depth_frame or not aligned_color_frame:
+            return None
         else:
             #save the frames to png
-            color_image = np.asanyarray(color_frame.get_data())
-            depth_image = np.asanyarray(depth_frame.get_data())
+            color_image = np.asanyarray(aligned_color_frame.get_data()) 
+            depth_image = np.asanyarray(aligned_depth_frame.get_data()) * depth_scale
 
             cv2.imwrite(os.path.join(rgb_images_path, str(i) + ".png"), color_image)
             cv2.imwrite(os.path.join(depth_images_path, str(i) + ".png"), depth_image)

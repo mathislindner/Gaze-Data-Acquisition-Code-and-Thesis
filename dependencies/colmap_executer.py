@@ -76,9 +76,12 @@ def run_colmap_exhaustive_matcher(recording_id):
         print("exhaustive matcher already run")
         return
     #if path exists on scratch_net, copy it back to recordings folder and delete it from scratch_net
-    if os.path.exists(os.path.join(scratch_net_folder_tmp, str(recording_id), "colmap_EM_ws", "exhaustive_matching_done.txt")):
+    elif os.path.exists(os.path.join(scratch_net_folder_tmp, str(recording_id), "colmap_EM_ws", "exhaustive_matching_done.txt")):
         clean_up_temp_and_export_colmap()
-
+        return
+    elif os.path.exists(os.path.join(scratch_net_folder_tmp, str(recording_id), "colmap_EM_ws")):
+        print("exhaustive matcher already running_{}".format(recording_id))
+        return
     current_working_dir = os.getcwd()
     runcolmap_batch_file = os.path.join(current_working_dir, 'dependencies', "run_colmap_exhaustive_matcher.sh")
     

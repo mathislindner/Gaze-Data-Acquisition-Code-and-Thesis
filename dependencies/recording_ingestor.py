@@ -63,18 +63,20 @@ class recordingCurator:
         self.recording_folder = os.path.join(recordings_folder,str(self.recording_id))
  
     def curate_recording(self):
-        frames_path = os.path.join(self.recording_folder, camera_names[0].replace(" ","_"), "0.png")
-        
-        #else extract frames
         extract_frames(self.recording_id)
         extract_depth_camera_frames(self.recording_id)
         correspond_cameras_and_gaze(self.recording_id)
         undistort_world_camera(self.recording_id)
         #run COLMAP on the world camera frames
+        print("Running colmap on recording:" + str(self.recording_id))
         run_colmap_exhaustive_matcher(self.recording_id)
         #run_colmap_automatic_reconstructor(self.recording_id)
         clean_up_temp_and_export_colmap()
         #TODO: use colmap results and laser data to create 3D labeling
+        #create a file that says that the recording has been curated
+        with open(os.path.join(self.recording_folder, "curated.txt"), "w") as f:
+            f.write("This recording has been curated")
+            
 
 #Object that does the final exportation of the recording to the final folder (where we only keep the frames where the gaze is looking for 2 seconds...)
 class recordingExporter:
