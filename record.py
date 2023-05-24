@@ -4,7 +4,7 @@ import shutil
 from dependencies.constants import *
 import pynput.keyboard as keyboard
 from dependencies.recording_devices import *
-from time import time_ns
+from time import time_ns, sleep
 import json
 import yaml
 from yaml.loader import SafeLoader
@@ -62,6 +62,9 @@ class acquisitionLogic():
         self.event_id = 0
         self.recording_id = self.pupil_camera.start_recording()
         self.depth_and_rgb_cameras.start_recording(self.recording_id)
+        #FIXME: change the exposure of the color camera while recording
+        sleep(4)
+        self.depth_and_rgb_cameras.change_options_for_laser()
 
     def stop_recording_all_devices(self):
         self.recording_bool = False

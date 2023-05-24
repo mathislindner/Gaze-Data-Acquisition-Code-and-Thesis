@@ -10,14 +10,16 @@ class depthAndRgbCameras():
     def __init__(self):
         self.pipeline = rs.pipeline()
         self.config = rs.config()
+        self.profile = None
         self.i = 0
+        print("depth and rgb cameras initialized")
 
     def start_recording(self, recording_id):
         recording_path = os.path.join(recordings_folder, recording_id, "realsensed435.bag")
         self.config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
         self.config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
         self.config.enable_record_to_file(recording_path)
-        self.pipeline.start(self.config)
+        self.profile = self.pipeline.start(self.config)
 
     def stop_recording(self):
         self.pipeline.stop()
@@ -28,6 +30,22 @@ class depthAndRgbCameras():
         self.config.disable_all_streams()
         #the recording is deleted automatically in the acquisition logic
 
+
+    #TODO
+    def change_options_for_laser(self, exposure):
+        '''
+        exposure: int
+        changed the exposure of the color camera while recording
+        'Defines general configuration controls. These can generally be mapped to camera UVC controls, and can be set / queried at any time unless stated otherwise.'
+        '''
+        color_sensor = self.profile.get_device().query_sensors()[1]
+        #turn off auto exposure
+        color_sensor.set_option(rs.option.enable_auto_exposure, False)
+        ##set exposure
+        color_sensor.set_option(rs.option.exposure, value = 400)
+        color_sensor.set_option(rs.option.sharpness, value = 50)
+        color_sensor.set_option(rs.option.brightness, value = 5)
+        
 class PupilCamera():
     def __init__(self, ip, port):
         try:
