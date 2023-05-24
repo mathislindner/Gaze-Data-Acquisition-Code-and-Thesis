@@ -18,59 +18,33 @@ def find_laser_in_image(image, rectangle):
     rectangle = np.array(rectangle)
     #set to black everything outside the rectangle
     mask = np.zeros(image.shape[:2], dtype="uint8")
-    mask = cv2.drawContours(mask, [rectangle], -1, 255, -1)
-    #apply the mask
-    masked_image = cv2.bitwise_and(image, image, mask=mask)
-    #initialize the center of the laser
-    x, y = -1, -1
-    #define the range of the laser in HSV
-    lower = (170,50,50)
-    upper = (180,255,255)
-
-    #apply histogram equalization hsv
-    #convert the image to HSV
-    hsv = cv2.cvtColor(masked_image, cv2.COLOR_BGR2HSV)
-    #split the channels
-    h, s, v = cv2.split(hsv)
-    #apply histogram equalization to the value channel
-    h = cv2.equalizeHist(h)
-    s = cv2.equalizeHist(s)
-    v = cv2.equalizeHist(v)
-    #merge the channels
-    hsv = cv2.merge([h, s, v])
-    #show the image
-    stacked = np.hstack((h, s, v))
-    cv2.imshow("v", v)
-    #cv2.imshow("stacked", stacked)
-    cv2.waitKey(0)
-
-
-    #convert the image to HSV
-    hsv = cv2.cvtColor(masked_image, cv2.COLOR_BGR2HSV)
+    cv2.drawContours(mask, [rectangle], -1, 255, -1)
+    image = cv2.bitwise_and(image, image, mask=mask)
+    #convert to hsv
+    hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+    #define the lower and upper boundaries of the "red" laser in the HSV color space
+    lower = np.array([170, 50, 50])
+    upper = np.array([180, 255, 255])
+    #construct a mask for the laser, then perform a series of dilations and erosions to remove any small blobs left in the mask
     mask = cv2.inRange(hsv, lower, upper)
-    #show the mask
-    cv2.imshow("mask", mask)
-    cv2.waitKey(0)
-    #find the contours of the laser
-    contours, hierarchy = cv2.findContours(mask.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-    print("c", c)
+    #find contours in the mask and initialize the current (x, y) center of the laser
+    contours = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[-2]
+
+    x,y = -1,-1
+    print(contours)
     #if there are contours
     if len(contours) > 0:
-        #show the contours
-        cv2.drawContours(image, contours, -1, (0, 255, 0), 3)
-        cv2.imshow("contours", image)
-        cv2.waitKey(0)
-        #find the largest contour
-        c = max(contours, key=cv2.contourArea)
-        #find the center of the contour
-        M = cv2.moments(c)
-        if M["m00"] != 0:
-            x = int(M["m10"] / M["m00"])
-            y = int(M["m01"] / M["m00"])
+        print("found {} contours".format(len(contours)))
+        #find the middle of all contours
+        x = int(np.mean([np.mean(contour[:,:,0]) for contour in contours]))
+        y = int(np.mean([np.mean(contour[:,:,1]) for contour in contours]))
+        print("x: {}, y: {}".format(x,y))
     #draw a circle around the center of the laser
-    #cv2.circle(image, (x, y), 7, (0, 255, 0), -1)
-    #cv2.imshow("image", image)
-    #cv2.waitKey(0)
+    cv2.circle(image, (x, y), 10, (0, 255, 0), 2)
+    cv2.imshow("image", image)
+    cv2.waitKey(0)
+    #save the image\
+    cv2.imwrite("laser_detection.png", image)
     return (x,y)
 
 #get aruco projection rectangle ids to corners mapping
@@ -147,6 +121,7 @@ def get_3D_laser_position_relative_to_depth_camera(image_array, depth_array_corr
 
 i=297
 image_path = os.path.join(recordings_folder, "85854c40-066e-4825-94d6-312016ea7b85", "rgb_pngs", "{}.png".format(i))
+image_path = '/scratch_net/snapo/mlindner/docs/gaze_data_acquisition/laser_test.png'
 image = cv2.imread(image_path)
 x,y = get_2D_laser_position(image)
 print(x,y)
