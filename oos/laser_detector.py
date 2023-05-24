@@ -23,7 +23,7 @@ def find_laser_in_image(image, rectangle):
     #convert to hsv
     hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
     #define the lower and upper boundaries of the "red" laser in the HSV color space
-    lower = np.array([170, 50, 50])
+    lower = np.array([170, 30, 50])
     upper = np.array([180, 255, 255])
     #construct a mask for the laser, then perform a series of dilations and erosions to remove any small blobs left in the mask
     mask = cv2.inRange(hsv, lower, upper)
@@ -40,11 +40,11 @@ def find_laser_in_image(image, rectangle):
         y = int(np.mean([np.mean(contour[:,:,1]) for contour in contours]))
         print("x: {}, y: {}".format(x,y))
     #draw a circle around the center of the laser
-    cv2.circle(image, (x, y), 10, (0, 255, 0), 2)
-    cv2.imshow("image", image)
-    cv2.waitKey(0)
+    #cv2.circle(image, (x, y), 10, (0, 255, 0), 2)
+    #cv2.imshow("image", image)
+    #cv2.waitKey(0)
     #save the image\
-    cv2.imwrite("laser_detection.png", image)
+    #cv2.imwrite("laser_detection.png", image)
     return (x,y)
 
 #get aruco projection rectangle ids to corners mapping

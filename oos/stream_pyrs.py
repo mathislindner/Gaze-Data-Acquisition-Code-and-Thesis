@@ -3,6 +3,8 @@ import pyrealsense2 as rs
 import cv2
 import numpy as np
 
+from laser_detector import get_2D_laser_position, get_3D_laser_position_relative_to_depth_camera
+
 pipeline = rs.pipeline()
 config = rs.config()
 config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
@@ -25,7 +27,7 @@ try:
             #turn off auto exposure
             color_sensor.set_option(rs.option.enable_auto_exposure, False)
             ##set exposure
-            color_sensor.set_option(rs.option.exposure, value = 400)
+            color_sensor.set_option(rs.option.exposure, value = 300)
             ##set gain
             #color_sensor.set_option(rs.option.gain, value = 6)
             ##set white balance
@@ -33,13 +35,15 @@ try:
             #set sharpness
             color_sensor.set_option(rs.option.sharpness, value = 50)
             color_sensor.set_option(rs.option.brightness, value = 5)
-        if j == 100:
-            cv2.imwrite('laser_test.png', color_image)
-
         j += 1
+        #find laser
+        laser_position_2D = get_2D_laser_position(color_image)
+        #show laser
+        cv2.circle(color_image, laser_position_2D, 5, (0, 0, 255), 3)
+        #show image
         cv2.imshow('RealSense', color_image)
-        #cv2.imshow('RealSense', depth_image)
         cv2.waitKey(1)
+
 except Exception as e:
     print(e)
 finally:
