@@ -43,6 +43,8 @@ def add_events_from_csv_to_df(recording_id, df):
     recording_folder = os.path.join(recordings_folder, str(recording_id))
     local_synchronisation_series = pd.read_json(os.path.join(recording_folder, 'local_synchronisation.json'), typ='series', convert_dates=False)
     events_series = local_synchronisation_series[local_synchronisation_series.index.str.startswith('Event: ')]
+    #only keep the event number as the index
+    events_series.index = events_series.index.str.replace('Event: ', '')
     #add a column event_idx to the dataframe
     df['events_idx'] = None
     #add the event number to the row where the time is closest to the event time
@@ -50,7 +52,6 @@ def add_events_from_csv_to_df(recording_id, df):
     for event in events_series.index:
         event_time = events_series[event]
         idx_closest.append(df.index[df['timestamp [ns]'].apply(lambda x: abs(x - event_time)).idxmin()])
-    
     df.loc[idx_closest, 'events_idx'] = events_series.index
     #fill for 2 seconds after the event, which is 400 frames
     df['events_idx'] = df['events_idx'].ffill(limit=400)

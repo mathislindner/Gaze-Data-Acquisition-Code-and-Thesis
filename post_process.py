@@ -20,7 +20,8 @@ print(api.get_profile().status)
 #FIXME do not include unprocessed recordings (unprocessed in the cloud) (or do a try except in the download function)
 def get_recordings():
     recordings = api.get_recordings().result 
-    recording_ids = [recording.id for recording in recordings]
+    print("recordings: ", recordings)
+    recording_ids = [recording.id for recording in recordings if recording.is_viewable == True]
     return recording_ids
 
 ##############################################################################################
@@ -84,6 +85,7 @@ def curate_all_recordings_multiprocessing():
 #print current directory
 if __name__ == "__main__":
     download_all_recordings()
+    #TODO check if all necessary files are there before curating
     curate_all_recordings()
     #download_recording('b6a73239-5f5b-4fad-ad65-fcefb27ba4d8')
     #curate_recording('b6a73239-5f5b-4fad-ad65-fcefb27ba4d8')
