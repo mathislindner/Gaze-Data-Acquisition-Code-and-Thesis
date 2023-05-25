@@ -56,7 +56,7 @@ def playback(recording_id):
     config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
     path = os.path.join(recordings_folder, recording_id, "realsensed435.bag")
     config.enable_device_from_file(os.path.join(path), repeat_playback = False)
-    pipeline.start(config)
+    profile = pipeline.start(config)
 
 
     while True:
