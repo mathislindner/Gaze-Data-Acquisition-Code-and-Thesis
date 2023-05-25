@@ -142,16 +142,17 @@ def extract_depth_camera_frames(recording_id):
     config = rs.config()
     config.enable_device_from_file(os.path.join(recording_folder, "realsensed435.bag"), repeat_playback=False)
 
-    profile = pipeline.start(config)
+    pipeline.start(config)
     
 
-    depth_profile = rs.video_stream_profile(profile.get_stream(rs.stream.depth))
-    depth_intrinsics = depth_profile.get_intrinsics()
-    color_profile = rs.video_stream_profile(profile.get_stream(rs.stream.color))
-    color_intrinsics = color_profile.get_intrinsics()
-    depth_scale = profile.get_device().first_depth_sensor().get_depth_scale()
-    
-    playback = profile.get_device().as_playback()
+    #depth_profile = rs.video_stream_profile(profile.get_stream(rs.stream.depth))
+    depth_profile = config.resolve(rs.pipeline_wrapper(pipeline)).get_device().query_sensors()[0]
+    #color_profile = rs.video_stream_profile(profile.get_stream(rs.stream.color))
+    color_profile = config.resolve(rs.pipeline_wrapper(pipeline)).get_device().query_sensors()[1]
+    #depth_scale = profile.get_device().first_depth_sensor().get_depth_scale()
+    depth_scale = depth_profile.get_option(rs.option.depth_units)
+    #playback = profile.get_device().as_playback()
+    #playback =
     #playback.set_real_time(False)
 
     i = 0
@@ -165,7 +166,7 @@ def extract_depth_camera_frames(recording_id):
     while True:
         try:
             frames = pipeline.wait_for_frames()
-            playback.pause() #added this because else the frames are not saved correctly: https://stackoverflow.com/questions/58482414/frame-didnt-arrived-within-5000-while-reading-bag-file-pyrealsense2
+            #playback.pause() #added this because else the frames are not saved correctly: https://stackoverflow.com/questions/58482414/frame-didnt-arrived-within-5000-while-reading-bag-file-pyrealsense2
         except:
             print("bag file finished")
             break
@@ -193,7 +194,7 @@ def extract_depth_camera_frames(recording_id):
             #add the timestamp to the list and convert from ms to ns
             timestamps.append(frames.get_timestamp())
             i += 1
-            playback.resume()
+            #playback.resume()
     #save the depth images to a npz
     np.savez_compressed(os.path.join(recording_folder, "depth_array"), np.array(depth_images_list))
     #convert timestamps to ns 
