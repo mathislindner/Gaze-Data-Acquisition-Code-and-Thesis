@@ -12,6 +12,7 @@ config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
 profile = pipeline.start(config)
 color_sensor = profile.get_device().query_sensors()[1]
 j = 0
+color_sensor.set_option(rs.option.enable_auto_exposure, False)
 try:
     while True:
         frames = pipeline.wait_for_frames()
@@ -27,7 +28,7 @@ try:
             #turn off auto exposure
             color_sensor.set_option(rs.option.enable_auto_exposure, False)
             ##set exposure
-            color_sensor.set_option(rs.option.exposure, value = 300)
+            color_sensor.set_option(rs.option.exposure, value = 350)
             ##set gain
             #color_sensor.set_option(rs.option.gain, value = 6)
             ##set white balance
