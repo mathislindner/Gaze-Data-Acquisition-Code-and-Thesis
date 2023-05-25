@@ -81,5 +81,5 @@ def playback_with_settings(recording_id):
 
 
 if __name__ == "__main__":
-    playback('3d32f98c-d665-497d-bd34-6b436a82c8f1')
+    playback('test')
     #rec_obj = rec_test()
