@@ -22,6 +22,6 @@ elif username == "mlindner":
     #recordings_folder = "/scratch_net/snapo/mlindner/docs/gaze_data_acquisition/oos/recordings"
     scratch_net_folder_tmp = "/scratch_net/snapo/mlindner/tmp" #this folder is to run colmap, which is why it s in the scratch net!
     recordings_folder = "/srv/beegfs02/scratch/aegis_cvl/data/data_collection/recordings"
-    recordings_folder = "/scratch_net/snapo/mlindner/recordings"
+    #recordings_folder = "/scratch_net/snapo/mlindner/recordings"
 else:
     raise AssertionError

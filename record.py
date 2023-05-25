@@ -14,8 +14,8 @@ class acquisitionLogic():
         self.recording_bool = False
         self.event_id = None
         self.recording_id = "temp"
-        self.pupil_camera = PupilCameraTest()
-        #self.pupil_camera = PupilCamera(ip, port) #TODO:change back to PupilCamera
+        #self.pupil_camera = PupilCameraTest()
+        self.pupil_camera = PupilCamera(ip, port) #TODO:change back to PupilCamera
         
         self.depth_and_rgb_cameras = depthAndRgbCameras()
         print("to start recording press right arrow")

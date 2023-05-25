@@ -119,12 +119,12 @@ def get_3D_laser_position_relative_to_depth_camera(image_array, depth_array_corr
     return coordinates_3D
 
 
-i=297
-image_path = os.path.join(recordings_folder, "85854c40-066e-4825-94d6-312016ea7b85", "rgb_pngs", "{}.png".format(i))
-image_path = '/scratch_net/snapo/mlindner/docs/gaze_data_acquisition/laser_test.png'
-image = cv2.imread(image_path)
-x,y = get_2D_laser_position(image)
-print(x,y)
+#i=297
+#image_path = os.path.join(recordings_folder, "85854c40-066e-4825-94d6-312016ea7b85", "rgb_pngs", "{}.png".format(i))
+#image_path = '/scratch_net/snapo/mlindner/docs/gaze_data_acquisition/laser_test.png'
+#image = cv2.imread(image_path)
+#x,y = get_2D_laser_position(image)
+#print(x,y)
 
 
 
