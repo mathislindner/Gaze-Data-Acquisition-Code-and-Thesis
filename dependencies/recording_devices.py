@@ -20,6 +20,18 @@ class depthAndRgbCameras():
         self.config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
         self.config.enable_record_to_file(recording_path)
         self.profile = self.pipeline.start(self.config)
+        self.color_sensor = self.profile.get_device().query_sensors()[1]
+        #reset the color sensor options
+        #self.color_sensor.reset_device_options_to_default()
+        self.color_sensor.set_option(rs.option.enable_auto_exposure, True)
+        #after 120 frames the exposure is set to 350
+        #wait for 120 frames
+        for i in range(120):
+            self.pipeline.wait_for_frames()
+        #set exposure
+        self.change_options_for_laser()
+        print("events can be triggered now")
+
 
     def stop_recording(self):
         self.pipeline.stop()
@@ -32,20 +44,19 @@ class depthAndRgbCameras():
 
 
     #TODO
-    def change_options_for_laser(self, exposure):
+    def change_options_for_laser(self):
         '''
         exposure: int
         changed the exposure of the color camera while recording
         'Defines general configuration controls. These can generally be mapped to camera UVC controls, and can be set / queried at any time unless stated otherwise.'
         '''
-        color_sensor = self.profile.get_device().query_sensors()[1]
         #turn off auto exposure
-        color_sensor.set_option(rs.option.enable_auto_exposure, False)
+        self.color_sensor.set_option(rs.option.enable_auto_exposure, False)
         ##set exposure
-        color_sensor.set_option(rs.option.exposure, value = 400)
-        color_sensor.set_option(rs.option.sharpness, value = 50)
-        color_sensor.set_option(rs.option.brightness, value = 5)
-        
+        self.color_sensor.set_option(rs.option.exposure, value = 350) #350
+        self.color_sensor.set_option(rs.option.sharpness, value = 50)
+        self.color_sensor.set_option(rs.option.brightness, value = 5)
+
 class PupilCamera():
     def __init__(self, ip, port):
         try:

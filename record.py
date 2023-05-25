@@ -39,7 +39,7 @@ class acquisitionLogic():
 
         if key == keyboard.Key.space:
             self.trigger_event()
-
+   
         if key == keyboard.Key.esc:
             if self.recording_bool:
                 print("warning: recording is still on")
@@ -70,6 +70,8 @@ class acquisitionLogic():
         self.recording_bool = False
         self.pupil_camera.stop_recording()
         self.depth_and_rgb_cameras.stop_recording()
+        #make sure the it s saved right
+        sleep(2)
 
     def cancel_recording(self):
         self.recording_bool = False

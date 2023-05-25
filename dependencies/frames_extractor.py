@@ -119,8 +119,6 @@ def extract_frames(recording_id):
             #print(f'.time file: {len(timestamps_time[cam_i_])}')
             #print(f'ffprobe: {len(timestamps_ffprobe[cam_i_])}')
             #print(f'ffmpeg: {num_extracted_frames}')
-
-
 #save the frames to png, save the timestamps to a csv file corresponding to the frame number
 def extract_depth_camera_frames(recording_id):
     recording_folder = os.path.join(recordings_folder, str(recording_id))
@@ -143,41 +141,39 @@ def extract_depth_camera_frames(recording_id):
     pipeline = rs.pipeline()
     config = rs.config()
     config.enable_device_from_file(os.path.join(recording_folder, "realsensed435.bag"), repeat_playback=False)
-    pipeline_wrapper = rs.pipeline_wrapper(pipeline)
-    pipeline_profile = config.resolve(pipeline_wrapper)
-    device = pipeline_profile.get_device()
-    
 
     profile = pipeline.start(config)
-    playback = profile.get_device().as_playback()
-    playback.set_real_time(False)
     
-    profile = pipeline.get_active_profile()
+
     depth_profile = rs.video_stream_profile(profile.get_stream(rs.stream.depth))
     depth_intrinsics = depth_profile.get_intrinsics()
     color_profile = rs.video_stream_profile(profile.get_stream(rs.stream.color))
     color_intrinsics = color_profile.get_intrinsics()
     depth_scale = profile.get_device().first_depth_sensor().get_depth_scale()
-
     
+    playback = profile.get_device().as_playback()
+    #playback.set_real_time(False)
+
     i = 0
     align_to = rs.stream.color
     align = rs.align(align_to)
 
     timestamps = []
     depth_images_list = []
+
     #while the bag file is not finished
     while True:
         try:
             frames = pipeline.wait_for_frames()
             playback.pause() #added this because else the frames are not saved correctly: https://stackoverflow.com/questions/58482414/frame-didnt-arrived-within-5000-while-reading-bag-file-pyrealsense2
         except:
+            print("bag file finished")
             break
         #align the depth and color frames
-        #FIXME: this should be done with only one align object, but it doesn't work (try putting it outside the loop)
-        
-        aligned_frames = align.process(frames)
+        #if i > 100:
+            #change_options_for_laser(color_sensor)
 
+        aligned_frames = align.process(frames)
         depth_frame = frames.get_depth_frame()
         color_frame = frames.get_color_frame()
         aligned_depth_frame = aligned_frames.get_depth_frame()

@@ -20,7 +20,6 @@ print(api.get_profile().status)
 #FIXME do not include unprocessed recordings (unprocessed in the cloud) (or do a try except in the download function)
 def get_recordings():
     recordings = api.get_recordings().result 
-    print("recordings: ", recordings)
     recording_ids = [recording.id for recording in recordings if recording.is_viewable == True]
     return recording_ids
 
@@ -79,7 +78,6 @@ def curate_all_recordings_multiprocessing():
             to_curate.append(recording_id)
     pool = multiprocessing.Pool(processes=4)
     pool.map(curate_recording, to_curate)
-
 
 
 #print current directory
