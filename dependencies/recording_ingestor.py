@@ -5,6 +5,7 @@ from dependencies.constants import *
 from dependencies.file_helper import move_subfolder_content_to_parent #, extract_frames
 from dependencies.frames_extractor import extract_frames, extract_depth_camera_frames, undistort_world_camera
 from dependencies.colmap_executer import run_colmap_automatic_reconstructor, clean_up_temp_and_export_colmap, run_colmap_exhaustive_matcher
+from dependencies.laser_detector import add_laser_coordinates_to_df
 from pupilcloud import Api, ApiException
 import io
 import requests
@@ -73,9 +74,10 @@ class recordingCurator:
         #run_colmap_automatic_reconstructor(self.recording_id)
         clean_up_temp_and_export_colmap()
         #TODO: use colmap results and laser data to create 3D labeling
+        add_laser_coordinates_to_df(self.recording_id)
         #create a file that says that the recording has been curated
-        with open(os.path.join(self.recording_folder, "curated.txt"), "w") as f:
-            f.write("This recording has been curated")
+        #with open(os.path.join(self.recording_folder, "curated.txt"), "w") as f:
+        #    f.write("This recording has been curated")
             
 
 #Object that does the final exportation of the recording to the final folder (where we only keep the frames where the gaze is looking for 2 seconds...)

@@ -3,6 +3,7 @@ import sys
 sys.path.append("/scratch_net/snapo/mlindner/docs/gaze_data_acquisition")
 import cv2
 import numpy as np
+import pandas as pd
 import os
 import glob
 from time import sleep
@@ -30,7 +31,7 @@ def find_laser_in_image(image, rectangle):
     #find contours in the mask and initialize the current (x, y) center of the laser
     contours = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[-2]
 
-    x,y = -1,-1
+    x,y = None, None
     print(contours)
     #if there are contours
     if len(contours) > 0:
@@ -45,7 +46,7 @@ def find_laser_in_image(image, rectangle):
     #cv2.waitKey(0)
     #save the image\
     #cv2.imwrite("laser_detection.png", image)
-    return (x,y)
+    return x,y
 
 #get aruco projection rectangle ids to corners mapping
 #0: top left, 1: top right, 2: bottom left, 3: bottom right
@@ -83,7 +84,29 @@ def get_aruco_rectangle(image_array):
         print("only {} markers detected".format(len(ids)))
         return None
         
+    import pyrealsense2 as rs
+def deproject_pixels_to_points(u_array, v_array, depth):
+    # Create a pipeline and start streaming frames
+    pipeline = rs.pipeline()
+    config = rs.config()
+    config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
+    config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
+    profile = pipeline.start(config)
+    # Get the depth sensor's depth scale
+    depth_profile = rs.video_stream_profile(profile.get_stream(rs.stream.depth))
+    intrinsics = depth_profile.get_intrinsics()
 
+    points = np.zeros((len(u_array), 3))
+    for i in range(len(u_array)):
+        depth_at_pixel = get_depth_of_pixel(depth, [u_array[i], v_array[i]])[i]
+        #if the depth is 0, or u or v is None, skip this point
+        if depth_at_pixel == 0 or u_array[i] is None or v_array[i] is None:
+            points[i] = np.array(None, None, None)
+        else:
+            # Deproject from pixel to point in 3D
+            points[i] = rs.rs2_deproject_pixel_to_point(intrinsics, [u_array[i], v_array[i]], depth_at_pixel)
+            print(points[i])
+    return points
 
 
 def get_depth_of_pixel(image_path, pixel):
@@ -99,18 +122,17 @@ def get_2D_laser_position(image_array):
     '''
     aruco_rectangle = get_aruco_rectangle(image_array)
     if aruco_rectangle is None:
-        return -1,-1 #if no aruco rectangle is found, return -1,-1
-    position = find_laser_in_image(image_array, aruco_rectangle)
-    return position
+        return None, None
+    x,y = find_laser_in_image(image_array, aruco_rectangle)
+    return x,y
 
-def get_3D_laser_position_relative_to_depth_camera(image_array, depth_array_corresponding_to_image):
+#FIXME use df 2D laser position insteaed of calling function again
+def get_3D_laser_position_relative_to_depth_camera(laser_2D_position, depth_array_corresponding_to_image):
     '''
     returns the 3D position of the laser in the image, relative to the depth camera
     if no laser is found, or if the aruco rectangle is not found, returns None
     '''
-    #get the image path
-    laser_2D_position = get_2D_laser_position(image_array)
-    if laser_2D_position == (-1,-1):
+    if laser_2D_position == (None, None):
         return None
     #get the depth of the pixel
     depth_of_pixel = get_depth_of_pixel(depth_array_corresponding_to_image, laser_2D_position)
@@ -118,24 +140,31 @@ def get_3D_laser_position_relative_to_depth_camera(image_array, depth_array_corr
     coordinates_3D = rs.deproject_pixel_to_point(laser_2D_position, depth_of_pixel)
     return coordinates_3D
 
-
-#i=297
-#image_path = os.path.join(recordings_folder, "85854c40-066e-4825-94d6-312016ea7b85", "rgb_pngs", "{}.png".format(i))
-#image_path = '/scratch_net/snapo/mlindner/docs/gaze_data_acquisition/laser_test.png'
+def add_laser_coordinates_to_df(recording_id):
+    recording_path = os.path.join(recordings_folder, recording_id)
+    df_path = os.path.join(recording_path, "full_df.csv")
+    rgb_pngs_path = os.path.join(recording_path, "rgb_pngs")
+    depth_array_path = os.path.join(recording_path, "depth_array.npz")
+    depth_array = np.load(depth_array_path)['arr_0']
+    df = pd.read_csv(df_path)
+    #create columns for laser 2D and 3D coordinates
+    df[['laser_2D_u','laser_2D_v']] = df['depth_camera_idx'].apply(lambda x: get_2D_laser_position(cv2.imread(os.path.join(rgb_pngs_path, str(x) + ".png")))).to_list()
+    u_array = df['laser_2D_u'].to_numpy()
+    v_array = df['laser_2D_v'].to_numpy()
+    depth_array = np.load(depth_array_path)['arr_0']
+    x_array, y_array, z_array = deproject_pixels_to_points(u_array, v_array, depth_array)
+    df['laser_3D_x'] = x_array
+    df['laser_3D_y'] = y_array
+    df['laser_3D_z'] = z_array
+    
+    df.to_csv(df_path, index=False)
+#i=154
+#image_path = os.path.join(recordings_folder, "4c92b0d3-3abe-4745-9292-25433dab8aae", "rgb_pngs", "{}.png".format(i))
 #image = cv2.imread(image_path)
 #x,y = get_2D_laser_position(image)
 #print(x,y)
+#cv2.circle(image, (x, y), 10, (0, 255, 0), 2)
+#cv2.imshow("image", image)
+#cv2.waitKey(0)
 
-
-
-
-
-
-
-def depth_camera_pixel_to_3D(pixel, depths, recording_path):
-    #import colmap camera parameters
-    #get the depth of the pixel
-    depth = depths[pixel[1], pixel[0]]
-    coordinates_3D = rs.deproject_pixel_to_point(pixel, depth)
-    return coordinates_3D
-    
+#add_laser_coordinates_to_df("4c92b0d3-3abe-4745-9292-25433dab8aae")

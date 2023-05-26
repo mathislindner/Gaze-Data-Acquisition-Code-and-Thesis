@@ -37,7 +37,8 @@ def get_system_start_ts(recording_id):
 
 def copy_frames_to_new_folder(from_path, to_path, step=1):
     for file in os.listdir(from_path):
-        if int(file.split(".")[0]) % step == 0:
+        n = int(file.split(".")[0])
+        if n % step == 0:
             try:
                 copy(os.path.join(from_path, file), to_path)
             except:
