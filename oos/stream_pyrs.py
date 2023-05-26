@@ -3,7 +3,7 @@ import pyrealsense2 as rs
 import cv2
 import numpy as np
 
-from laser_detector import get_2D_laser_position, get_3D_laser_position_relative_to_depth_camera
+from dependencies.laser_detector import get_2D_laser_position, get_3D_laser_position_relative_to_depth_camera
 
 pipeline = rs.pipeline()
 config = rs.config()

@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 import os
 import glob
+import math
 from time import sleep
 from dependencies.constants import *
 from dependencies.colmap_helpers import read_write_model
@@ -32,14 +33,12 @@ def find_laser_in_image(image, rectangle):
     contours = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[-2]
 
     x,y = None, None
-    print(contours)
     #if there are contours
     if len(contours) > 0:
-        print("found {} contours".format(len(contours)))
         #find the middle of all contours
         x = int(np.mean([np.mean(contour[:,:,0]) for contour in contours]))
         y = int(np.mean([np.mean(contour[:,:,1]) for contour in contours]))
-        print("x: {}, y: {}".format(x,y))
+        #print("x: {}, y: {}".format(x,y))
     #draw a circle around the center of the laser
     #cv2.circle(image, (x, y), 10, (0, 255, 0), 2)
     #cv2.imshow("image", image)
@@ -85,7 +84,7 @@ def get_aruco_rectangle(image_array):
         return None
         
     import pyrealsense2 as rs
-def deproject_pixels_to_points(u_array, v_array, depth):
+def deproject_pixels_to_points(u_array, v_array,depth, depth_camera_idx_array):
     # Create a pipeline and start streaming frames
     pipeline = rs.pipeline()
     config = rs.config()
@@ -97,21 +96,36 @@ def deproject_pixels_to_points(u_array, v_array, depth):
     intrinsics = depth_profile.get_intrinsics()
 
     points = np.zeros((len(u_array), 3))
-    for i in range(len(u_array)):
-        depth_at_pixel = get_depth_of_pixel(depth, [u_array[i], v_array[i]])[i]
-        #if the depth is 0, or u or v is None, skip this point
-        if depth_at_pixel == 0 or u_array[i] is None or v_array[i] is None:
-            points[i] = np.array(None, None, None)
+    no_points = np.array([None, None, None])
+    #print shapes of arrays
+    print("u_array shape: {}".format(u_array.shape))
+    print("v_array shape: {}".format(v_array.shape))
+    print("depth shape: {}".format(depth.shape))
+    for i in range(len(u_array)-1):
+        u= u_array[i]
+        v = v_array[i]
+        if math.isnan(u) or math.isnan(v):
+            points[i] = no_points
+            continue
         else:
-            # Deproject from pixel to point in 3D
-            points[i] = rs.rs2_deproject_pixel_to_point(intrinsics, [u_array[i], v_array[i]], depth_at_pixel)
-            print(points[i])
-    return points
+            u = int(u)
+            v = int(v)
+            depth_at_pixel = get_depth_of_pixel(depth[depth_camera_idx_array[i]], [u, v])
+        #if the depth is 0, or u or v is None, skip this point
+        if depth_at_pixel == 0:
+            points[i] = no_points
+            continue
+        # Deproject from pixel to point in 3D
+        points[i] = rs.rs2_deproject_pixel_to_point(intrinsics, [u, v], depth_at_pixel)
+        print(points[i])
+    return points[:,0], points[:,1], points[:,2]
 
 
-def get_depth_of_pixel(image_path, pixel):
+def get_depth_of_pixel(depth_array, pixel):
     #get the depth of the pixel
-    depth = image_path[pixel[1], pixel[0]]
+    print("pixel: {}".format(pixel))
+    print("depth_array: {}".format(depth_array.shape))
+    depth = depth_array[pixel[0]][pixel[1]]
     return depth
 
 
@@ -151,13 +165,16 @@ def add_laser_coordinates_to_df(recording_id):
     df[['laser_2D_u','laser_2D_v']] = df['depth_camera_idx'].apply(lambda x: get_2D_laser_position(cv2.imread(os.path.join(rgb_pngs_path, str(x) + ".png")))).to_list()
     u_array = df['laser_2D_u'].to_numpy()
     v_array = df['laser_2D_v'].to_numpy()
+    depth_camera_idx_array = df['depth_camera_idx'].to_numpy()
+    df.to_csv(df_path, index=False)
     depth_array = np.load(depth_array_path)['arr_0']
-    x_array, y_array, z_array = deproject_pixels_to_points(u_array, v_array, depth_array)
+    x_array, y_array, z_array = deproject_pixels_to_points(u_array, v_array, depth_array,depth_camera_idx_array)
     df['laser_3D_x'] = x_array
     df['laser_3D_y'] = y_array
     df['laser_3D_z'] = z_array
-    
     df.to_csv(df_path, index=False)
+    
+    
 #i=154
 #image_path = os.path.join(recordings_folder, "4c92b0d3-3abe-4745-9292-25433dab8aae", "rgb_pngs", "{}.png".format(i))
 #image = cv2.imread(image_path)
