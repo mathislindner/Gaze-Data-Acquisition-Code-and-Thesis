@@ -5,11 +5,9 @@ import cv2
 import numpy as np
 import pandas as pd
 import os
-import glob
 import math
-from time import sleep
 from dependencies.constants import *
-from dependencies.colmap_helpers import read_write_model
+from dependencies.coordinates_transformation_helpers import convert_3D_coordinates_from_depth_to_pupil_world, project_3D_points_to_pupil_world
 #from compare_poinclouds import get_colmap_dense_model, get_colmap_sparse_model, get_depth_distances_array, get_colmap_depth_camera
 import pyrealsense2 as rs
 
@@ -63,7 +61,7 @@ def get_aruco_rectangle(image_array):
     if ids is not None and len(ids) > 3:
         #draw the markers
         image = cv2.aruco.drawDetectedMarkers(image, corners, ids)
-        cv2.imwrite('aruco_detected.png', image)
+        #cv2.imwrite('aruco_detected.png', image)
         #get the corners of the markers
         corners = np.squeeze(corners)
         #get the ids of the markers
@@ -154,25 +152,36 @@ def get_3D_laser_position_relative_to_depth_camera(laser_2D_position, depth_arra
     coordinates_3D = rs.deproject_pixel_to_point(laser_2D_position, depth_of_pixel)
     return coordinates_3D
 
+
 def add_laser_coordinates_to_df(recording_id):
+    #TODO:add the scale transformation to COLMAP coordinates txt file
+    #paths
     recording_path = os.path.join(recordings_folder, recording_id)
     df_path = os.path.join(recording_path, "full_df.csv")
     rgb_pngs_path = os.path.join(recording_path, "rgb_pngs")
     depth_array_path = os.path.join(recording_path, "depth_array.npz")
+
+    #imports
     depth_array = np.load(depth_array_path)['arr_0']
     df = pd.read_csv(df_path)
-    #create columns for laser 2D and 3D coordinates
+
+    """#create columns for laser 2D and 3D coordinates
     df[['laser_2D_u','laser_2D_v']] = df['depth_camera_idx'].apply(lambda x: get_2D_laser_position(cv2.imread(os.path.join(rgb_pngs_path, str(x) + ".png")))).to_list()
     u_array = df['laser_2D_u'].to_numpy()
     v_array = df['laser_2D_v'].to_numpy()
     depth_camera_idx_array = df['depth_camera_idx'].to_numpy()
+    world_camera_idx = df['world_camera_idx'].to_numpy()
     df.to_csv(df_path, index=False)
-    depth_array = np.load(depth_array_path)['arr_0']
-    x_array, y_array, z_array = deproject_pixels_to_points(u_array, v_array, depth_array,depth_camera_idx_array)
-    df['laser_3D_x'] = x_array
-    df['laser_3D_y'] = y_array
-    df['laser_3D_z'] = z_array
-    df.to_csv(df_path, index=False)
+    laser_3D_rel_to_depth = deproject_pixels_to_points(u_array, v_array, depth_array,depth_camera_idx_array)
+    """
+    laser_3D_rel_to_depth = np.array([df['laser_3D_x'], df['laser_3D_y'], df['laser_3D_z']]).T
+    points_in_colmap  = convert_3D_coordinates_from_depth_to_pupil_world(laser_3D_rel_to_depth, recording_id)
+    df['laser_3D_x'] = points_in_colmap[:,0]
+    df['laser_3D_y'] = points_in_colmap[:,1]
+    df['laser_3D_z'] = points_in_colmap[:,2]
+    laser_2d_in_world_coordinates = project_3D_points_to_pupil_world(laser_3D_rel_to_depth, recording_id, world_camera_idx)
+
+    #df.to_csv(df_path, index=False)
     
     
 #i=154
@@ -184,4 +193,4 @@ def add_laser_coordinates_to_df(recording_id):
 #cv2.imshow("image", image)
 #cv2.waitKey(0)
 
-#add_laser_coordinates_to_df("4c92b0d3-3abe-4745-9292-25433dab8aae")
+add_laser_coordinates_to_df("4c92b0d3-3abe-4745-9292-25433dab8aae")
