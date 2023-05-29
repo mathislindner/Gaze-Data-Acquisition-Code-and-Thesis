@@ -95,10 +95,6 @@ def deproject_pixels_to_points(u_array, v_array,depth, depth_camera_idx_array):
 
     points = np.zeros((len(u_array), 3))
     no_points = np.array([None, None, None])
-    #print shapes of arrays
-    print("u_array shape: {}".format(u_array.shape))
-    print("v_array shape: {}".format(v_array.shape))
-    print("depth shape: {}".format(depth.shape))
     for i in range(len(u_array)-1):
         u= u_array[i]
         v = v_array[i]
@@ -115,14 +111,11 @@ def deproject_pixels_to_points(u_array, v_array,depth, depth_camera_idx_array):
             continue
         # Deproject from pixel to point in 3D
         points[i] = rs.rs2_deproject_pixel_to_point(intrinsics, [u, v], depth_at_pixel)
-        print(points[i])
     return points[:,0], points[:,1], points[:,2]
 
 
 def get_depth_of_pixel(depth_array, pixel):
     #get the depth of the pixel
-    print("pixel: {}".format(pixel))
-    print("depth_array: {}".format(depth_array.shape))
     depth = depth_array[pixel[0]][pixel[1]]
     return depth
 
@@ -154,7 +147,12 @@ def get_3D_laser_position_relative_to_depth_camera(laser_2D_position, depth_arra
 
 
 def add_laser_coordinates_to_df(recording_id):
+    if recording_id != "83ee44f0-c9a3-4aea-8237-8f55c0de4fd9":
+        return
     #TODO:add the scale transformation to COLMAP coordinates txt file
+    if not os.path.exists(os.path.join(recordings_folder, recording_id, "colmap_EM_export")):
+        print("colmap EM export does not exist yet for recording {}".format(recording_id))
+        return
     #paths
     recording_path = os.path.join(recordings_folder, recording_id)
     df_path = os.path.join(recording_path, "full_df.csv")
@@ -165,23 +163,25 @@ def add_laser_coordinates_to_df(recording_id):
     depth_array = np.load(depth_array_path)['arr_0']
     df = pd.read_csv(df_path)
 
-    """#create columns for laser 2D and 3D coordinates
-    df[['laser_2D_u','laser_2D_v']] = df['depth_camera_idx'].apply(lambda x: get_2D_laser_position(cv2.imread(os.path.join(rgb_pngs_path, str(x) + ".png")))).to_list()
-    u_array = df['laser_2D_u'].to_numpy()
-    v_array = df['laser_2D_v'].to_numpy()
+    #create columns for laser 2D and 3D coordinates
+    df[['laser_2D_u_depth_camera','laser_2D_v_depth_camera']] = df['depth_camera_idx'].apply(lambda x: get_2D_laser_position(cv2.imread(os.path.join(rgb_pngs_path, str(x) + ".png")))).to_list()
+    u_array = df['laser_2D_u_depth_camera'].to_numpy()
+    v_array = df['laser_2D_v_depth_camera'].to_numpy()
     depth_camera_idx_array = df['depth_camera_idx'].to_numpy()
-    world_camera_idx = df['world_camera_idx'].to_numpy()
+    world_camera_idx = df['world_idx'].to_numpy()
     df.to_csv(df_path, index=False)
     laser_3D_rel_to_depth = deproject_pixels_to_points(u_array, v_array, depth_array,depth_camera_idx_array)
-    """
-    laser_3D_rel_to_depth = np.array([df['laser_3D_x'], df['laser_3D_y'], df['laser_3D_z']]).T
+    x,y,z = laser_3D_rel_to_depth
+    laser_3D_rel_to_depth = np.array([x,y,z]).T
     points_in_colmap  = convert_3D_coordinates_from_depth_to_pupil_world(laser_3D_rel_to_depth, recording_id)
-    df['laser_3D_x'] = points_in_colmap[:,0]
-    df['laser_3D_y'] = points_in_colmap[:,1]
-    df['laser_3D_z'] = points_in_colmap[:,2]
-    laser_2d_in_world_coordinates = project_3D_points_to_pupil_world(laser_3D_rel_to_depth, recording_id, world_camera_idx)
-
-    #df.to_csv(df_path, index=False)
+    df['laser_3D_x_colmap'] = points_in_colmap[:,0]
+    df['laser_3D_y_colmap'] = points_in_colmap[:,1]
+    df['laser_3D_z_colmap'] = points_in_colmap[:,2]
+    laser_2d_in_world_coordinates = project_3D_points_to_pupil_world(points_in_colmap, recording_id, world_camera_idx)
+    
+    df['laser_2D_u_world_camera'] = laser_2d_in_world_coordinates[:,0]
+    df['laser_2D_v_world_camera'] = laser_2d_in_world_coordinates[:,1]
+    df.to_csv(df_path, index=False)
     
     
 #i=154
@@ -193,4 +193,4 @@ def add_laser_coordinates_to_df(recording_id):
 #cv2.imshow("image", image)
 #cv2.waitKey(0)
 
-add_laser_coordinates_to_df("4c92b0d3-3abe-4745-9292-25433dab8aae")
+#add_laser_coordinates_to_df("4c92b0d3-3abe-4745-9292-25433dab8aae")

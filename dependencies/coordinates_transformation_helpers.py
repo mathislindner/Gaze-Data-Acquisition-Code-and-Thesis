@@ -24,18 +24,16 @@ def get_colmap_depth_image(images):
     for image_id in images:
         if images[image_id].name == "depth_rgb.png":
             return images[image_id]
-            
+#creates an array of colmap images same size as idxs
 def get_colmap_world_images(images, idxs):
     #if idxs is not None, return the corresponding image
-    images = []
-    for image_id in images:
-        for idx in idxs:
+    images = np.empty(len(idxs), dtype=object)
+    for idx in idxs:
+        for image_id in images:
             if images[image_id].name == "{}.png".format(idx):
                 if images[image_id].id in idxs:
-                    images.append(images[image_id])
-            else:
-                images.append(None)
-    return images
+                    images[idx] = images[image_id]
+    return np.array(images)
             
 def get_colmap_depth_camera(images, cameras):
     colmap_depth_image = get_colmap_depth_image(images)
@@ -43,7 +41,7 @@ def get_colmap_depth_camera(images, cameras):
 
 def get_colmap_world_camera(images, cameras, idx):
     colmap_depth_camera_id = cameras[get_colmap_depth_image(images).camera_id]
-    camera_ids = [cameras.camera_id for camera in cameras]
+    camera_ids = cameras.keys()
     #world camera has the id that is not the depth camera id
     world_camera = cameras[camera_ids != colmap_depth_camera_id]
     return world_camera
@@ -158,8 +156,16 @@ def project_3D_points_to_pupil_world(points, recording_id, world_camera_idx):
     world_camera_instrinsics_matrix = np.array([[fx, 0, cx], [0, fy, cy], [0, 0, 1]])
     #get from world images
     world_camera_extrinsics_array = 0
-    projected_points = []
-    for point, colmap_world_image in zip(points, colmap_world_images):
+    array_projected_points = np.empty((len(points), 2))
+    print(points.shape)
+    print(colmap_world_images.shape)
+    for i, (point, colmap_world_image) in enumerate(zip(points, colmap_world_images)):
+        print("projecting point {}".format(i))
+        #if point in nan, skip, add nan to array_projected_points
+        if np.isnan(point).any():
+            array_projected_points[i] = np.array([np.nan, np.nan])
+            continue
+        print(point)
         rotation_matrix = read_write_model.qvec2rotmat(colmap_world_image.qvec)
         translation_matrix = colmap_world_image.tvec
         world_camera_extrinsics = np.eye(4)
@@ -174,5 +180,11 @@ def project_3D_points_to_pupil_world(points, recording_id, world_camera_idx):
         points_2D = points_3D @ world_camera_instrinsics_matrix.T
         points_2D = points_2D[:, :2] / points_2D[:, 2:]
         points_2D = points_2D.astype(int)
-        projected_points.append(points_2D)
-    return projected_points
+        array_projected_points[i] = points_2D
+    return array_projected_points
+
+"""recording_folder = os.path.join(recordings_folder, "83ee44f0-c9a3-4aea-8237-8f55c0de4fd9")
+full_df = pd.read_csv(os.path.join(recording_folder, "full_df.csv"))
+world_camera_idx = full_df["world_idx"].to_numpy()
+points = np.array([[0,0,0], [1,1,1]])
+project_3D_points_to_pupil_world(points,"83ee44f0-c9a3-4aea-8237-8f55c0de4fd9",world_camera_idx)"""

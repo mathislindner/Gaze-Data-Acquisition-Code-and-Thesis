@@ -2,7 +2,8 @@
 import pyrealsense2 as rs
 import cv2
 import numpy as np
-
+import sys
+sys.path.append("/scratch_net/snapo/mlindner/docs/gaze_data_acquisition")
 from dependencies.laser_detector import get_2D_laser_position, get_3D_laser_position_relative_to_depth_camera
 
 pipeline = rs.pipeline()
