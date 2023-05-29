@@ -101,7 +101,7 @@ def extract_frames(recording_id):
         try:
             os.mkdir(output_folder)
         except:
-            print(f'Folder {output_folder} already exists. Skipping curation.')
+            print(f'Folder {output_folder} already exists. Skipping extraction.')
             return
 
         timestamps_time[cam_i_] = decode_timestamp(time_file)
@@ -160,7 +160,6 @@ def extract_depth_camera_frames(recording_id):
 
     timestamps = []
     depth_images_list = []
-
     #while the bag file is not finished
     while True:
         try:

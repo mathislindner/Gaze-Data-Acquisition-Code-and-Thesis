@@ -40,6 +40,7 @@ def find_closest_timestamp(timestamp, timestamps):
     return closest_timestamp
 
 def add_events_from_csv_to_df(recording_id, df):
+    print("add events from csv to df")
     recording_folder = os.path.join(recordings_folder, str(recording_id))
     local_synchronisation_series = pd.read_json(os.path.join(recording_folder, 'local_synchronisation.json'), typ='series', convert_dates=False)
     events_series = local_synchronisation_series[local_synchronisation_series.index.str.startswith('Event: ')]
@@ -51,7 +52,8 @@ def add_events_from_csv_to_df(recording_id, df):
     idx_closest = []
     for event in events_series.index:
         event_time = events_series[event]
-        idx_closest.append(df.index[df['timestamp [ns]'].apply(lambda x: abs(x - event_time)).idxmin()])
+        clossest_index_to_event = df['timestamp [ns]'].apply(lambda x: abs(x - event_time)).idxmin()
+        idx_closest.append(clossest_index_to_event)
     df.loc[idx_closest, 'events_idx'] = events_series.index
     #fill for 2 seconds after the event, which is 400 frames
     df['events_idx'] = df['events_idx'].ffill(limit=400)
@@ -146,6 +148,9 @@ def find_element_pairs(seq_1, seq_2):
 #create a csv file that pairs the gaze timestamps with the world camera, left camera and right eye camera frames.
 #
 def correspond_cameras_and_gaze(recording_id):
+    if os.path.exists(os.path.join(recordings_folder, str(recording_id), 'full_df')):
+        print("full_df.csv file already exists for recording " + str(recording_id))
+        return
     #check if local synchronisation file exists
     if not os.path.exists(os.path.join(recordings_folder, str(recording_id), 'local_synchronisation.json')):
         print("local synchronisation file does not exist for recording " + str(recording_id))
@@ -185,7 +190,6 @@ def correspond_cameras_and_gaze(recording_id):
     events_timestamps_rel = events_timestamps - gaze_timestamps[0]
     imu_timestamps_rel = imu_timestamps - gaze_timestamps[0]
     #to take care of the dummy timestamps
-
     if depth_camera_footage_bool:
         depth_camera_timestamps_rel = depth_camera_timestamps - gaze_timestamps[0] -  get_offset_from_local_csv(recording_id)/scale_factor #FIXME Check if + or -
     else:
@@ -199,7 +203,6 @@ def correspond_cameras_and_gaze(recording_id):
     best_pairs_gaze_depth_camera = find_element_pairs(gaze_timestamps_rel, depth_camera_timestamps_rel)
 
     assert gaze_timestamps_rel.shape[0] == best_pairs_gaze_left.shape[0] == best_pairs_gaze_right.shape[0] == best_pairs_gaze_world.shape[0] == best_pairs_gaze_events.shape[0] == best_pairs_gaze_imu.shape[0] == best_pairs_gaze_depth_camera.shape[0]
-
     #convert the timestamps to system time
     idx_g_l_r_w_i =  np.concatenate((best_pairs_gaze_left[:, 0:1], 
                                      best_pairs_gaze_left[:, 2:3],
