@@ -27,13 +27,13 @@ def get_colmap_depth_image(images):
 #creates an array of colmap images same size as idxs
 def get_colmap_world_images(images, idxs):
     #if idxs is not None, return the corresponding image
-    images = np.empty(len(idxs), dtype=object)
+    images_out = np.empty(idxs.shape[0], dtype = object)
     for idx in idxs:
         for image_id in images:
             if images[image_id].name == "{}.png".format(idx):
-                if images[image_id].id in idxs:
-                    images[idx] = images[image_id]
-    return np.array(images)
+                images_out[idx] = images[image_id]
+    assert len(images_out) == idxs.shape[0]
+    return images_out
             
 def get_colmap_depth_camera(images, cameras):
     colmap_depth_image = get_colmap_depth_image(images)
@@ -77,8 +77,6 @@ def get_scale(colmap_images, colmap_points, xyz_d_i):
 
 #input are numpy arrays of shape pointcloud: (n, 3), R: (3, 3), t: (3), scale: float
 def transform_pointcloud_depth_to_colmap(pointcloud, Rotation_matrix, translation_vector, scale):
-    # Be careful that to properly apply scale to align colmap to depth camera
-    # the transformation should be from world_2_depth before applying the scale
     colmap_to_depth_tranformation_matrix = np.eye(4)
     colmap_to_depth_tranformation_matrix[:3, :3] = Rotation_matrix
     colmap_to_depth_tranformation_matrix[:3, 3] = translation_vector
@@ -157,14 +155,14 @@ def project_3D_points_to_pupil_world(points, recording_id, world_camera_idx):
     #get from world images
     world_camera_extrinsics_array = 0
     array_projected_points = np.empty((len(points), 2))
-    print(points.shape)
-    print(colmap_world_images.shape)
     for i, (point, colmap_world_image) in enumerate(zip(points, colmap_world_images)):
-        print("projecting point {}".format(i))
-        #if point in nan, skip, add nan to array_projected_points
         if np.isnan(point).any():
             array_projected_points[i] = np.array([np.nan, np.nan])
             continue
+        if colmap_world_image is None:
+            array_projected_points[i] = np.array([np.nan, np.nan])
+            continue
+        #if point in nan, skip, add nan to array_projected_points
         print(point)
         rotation_matrix = read_write_model.qvec2rotmat(colmap_world_image.qvec)
         translation_matrix = colmap_world_image.tvec

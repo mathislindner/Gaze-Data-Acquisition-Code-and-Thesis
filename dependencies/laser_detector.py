@@ -165,8 +165,12 @@ def add_laser_coordinates_to_df(recording_id):
 
     #create columns for laser 2D and 3D coordinates
     df[['laser_2D_u_depth_camera','laser_2D_v_depth_camera']] = df['depth_camera_idx'].apply(lambda x: get_2D_laser_position(cv2.imread(os.path.join(rgb_pngs_path, str(x) + ".png")))).to_list()
+    #interpolate the laser 2D coordinates
+    df['laser_2D_u_depth_camera'] = df['laser_2D_u_depth_camera'].interpolate()
+    df['laser_2D_v_depth_camera'] = df['laser_2D_v_depth_camera'].interpolate()
     u_array = df['laser_2D_u_depth_camera'].to_numpy()
     v_array = df['laser_2D_v_depth_camera'].to_numpy()
+
     depth_camera_idx_array = df['depth_camera_idx'].to_numpy()
     world_camera_idx = df['world_idx'].to_numpy()
     df.to_csv(df_path, index=False)
@@ -177,10 +181,15 @@ def add_laser_coordinates_to_df(recording_id):
     df['laser_3D_x_colmap'] = points_in_colmap[:,0]
     df['laser_3D_y_colmap'] = points_in_colmap[:,1]
     df['laser_3D_z_colmap'] = points_in_colmap[:,2]
+    #interpolate all the nan values
+    df['laser_3D_x_colmap'] = df['laser_3D_x_colmap']
+    df['laser_3D_y_colmap'] = df['laser_3D_y_colmap']
+    df['laser_3D_z_colmap'] = df['laser_3D_z_colmap']
+    points_in_colmap = df[['laser_3D_x_colmap','laser_3D_y_colmap','laser_3D_z_colmap']].to_numpy()
     laser_2d_in_world_coordinates = project_3D_points_to_pupil_world(points_in_colmap, recording_id, world_camera_idx)
     
-    df['laser_2D_u_world_camera'] = laser_2d_in_world_coordinates[:,0]
-    df['laser_2D_v_world_camera'] = laser_2d_in_world_coordinates[:,1]
+    #df['laser_2D_u_world_camera'] = laser_2d_in_world_coordinates[:,0]
+    #df['laser_2D_v_world_camera'] = laser_2d_in_world_coordinates[:,1]
     df.to_csv(df_path, index=False)
     
     
