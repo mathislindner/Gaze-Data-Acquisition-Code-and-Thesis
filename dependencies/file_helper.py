@@ -6,7 +6,7 @@ try:
 except ModuleNotFoundError:
     from constants import *
 import numpy as np
-
+import pandas as pd
 def decode_timestamp(timestamp_path):
     ts = np.fromfile(timestamp_path, dtype=np.uint64)
     return ts
@@ -39,6 +39,22 @@ def copy_frames_to_new_folder(from_path, to_path, step=1):
     for file in os.listdir(from_path):
         n = int(file.split(".")[0])
         if n % step == 0:
+            try:
+                copy(os.path.join(from_path, file), to_path)
+            except:
+                pass
+def copy_frames_to_new_folder_during_event(from_path, to_path, recording_id, step=1):
+    #get the df
+    recording_folder = os.path.join(recordings_folder, recording_id)
+    df = pd.read_csv(os.path.join(recording_folder, "full_df.csv"))
+    #remove all the rows were events are nan
+    df = df[df['events_idx'].notna()]
+    #get indices of the world camera images that were taken at event times world_idx
+    indices_of_world_images = df['world_idx'].values
+    #only copy frames where the index is in idx
+    for file in os.listdir(from_path):
+        n = int(file.split(".")[0])
+        if n % step == 0 and n in indices_of_world_images:
             try:
                 copy(os.path.join(from_path, file), to_path)
             except:

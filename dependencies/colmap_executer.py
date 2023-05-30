@@ -1,16 +1,18 @@
 try:
     from dependencies.constants import *
-    from dependencies.file_helper import copy_frames_to_new_folder
+    from dependencies.file_helper import copy_frames_to_new_folder, copy_frames_to_new_folder_during_event
     from dependencies.colmap_helpers.read_write_model import read_model, write_cameras_text, write_images_text, write_points3D_text
 except:
     from constants import *
-    from file_helper import copy_frames_to_new_folder
+    from file_helper import copy_frames_to_new_folder, copy_frames_to_new_folder_during_event
     from colmap_helpers.read_write_model import read_model, write_cameras_text, write_images_text, write_points3D_text
 import os 
 import json
 import shutil
 
-def create_image_folders(recording_id, colmap_ws_folder):
+#modes: events, all
+#events being only taking images that were taken at event times
+def create_image_folders(recording_id, colmap_ws_folder, mode = 'events'):
     recording_folder = os.path.join(recordings_folder,str(recording_id))
 
     undistorted_world_camera_folder = os.path.join(recording_folder, "PI_world_v1_ps1_undistorted")
@@ -20,9 +22,14 @@ def create_image_folders(recording_id, colmap_ws_folder):
 
     if not os.path.exists(colmap_ws_images_folder):
         os.makedirs(colmap_ws_images_folder)
-        #copy the world images to the colmap workspace folder 3 frames per second
-        copy_frames_to_new_folder(undistorted_world_camera_folder, colmap_ws_images_folder, step = 10)
-
+        if mode == 'all':
+            #copy the world images to the colmap workspace folder 3 frames per second
+            copy_frames_to_new_folder(undistorted_world_camera_folder, colmap_ws_images_folder, step = 10)
+        elif mode == 'events':
+            copy_frames_to_new_folder_during_event(undistorted_world_camera_folder, colmap_ws_images_folder,recording_id, step = 4)
+        else:
+            print("colmap Mode not recognized")
+            return
         #copy one depth image to the colmap workspace folder (3secs after recording start)
         shutil.copy(os.path.join(depth_camera_folder, "95.png"), colmap_ws_images_folder)
         #rename the depth image to depth_rgb.png to not have the same name as the world camera images
@@ -36,7 +43,6 @@ def create_image_folders(recording_id, colmap_ws_folder):
             f.write(image_name + "\n")
     with open(os.path.join(colmap_ws_folder, "depth_images.txt"), "w") as f:
         f.write(all_images_names[-1])
-
 
 def copy_ws_to_scratch(recording_id, colmap_ws_folder):
     ws_name = colmap_ws_folder.split("/")[-1]
