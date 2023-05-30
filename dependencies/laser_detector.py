@@ -147,8 +147,6 @@ def get_3D_laser_position_relative_to_depth_camera(laser_2D_position, depth_arra
 
 
 def add_laser_coordinates_to_df(recording_id):
-    if recording_id != "83ee44f0-c9a3-4aea-8237-8f55c0de4fd9":
-        return
     #TODO:add the scale transformation to COLMAP coordinates txt file
     if not os.path.exists(os.path.join(recordings_folder, recording_id, "colmap_EM_export")):
         print("colmap EM export does not exist yet for recording {}".format(recording_id))

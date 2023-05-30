@@ -26,7 +26,7 @@ def create_image_folders(recording_id, colmap_ws_folder, mode = 'events'):
             #copy the world images to the colmap workspace folder 3 frames per second
             copy_frames_to_new_folder(undistorted_world_camera_folder, colmap_ws_images_folder, step = 10)
         elif mode == 'events':
-            copy_frames_to_new_folder_during_event(undistorted_world_camera_folder, colmap_ws_images_folder,recording_id, step = 4)
+            copy_frames_to_new_folder_during_event(undistorted_world_camera_folder, colmap_ws_images_folder, recording_id,  step = 4)
         else:
             print("colmap Mode not recognized")
             return

@@ -79,6 +79,9 @@ class recordingCurator:
         #run_colmap_automatic_reconstructor(self.recording_id)
         clean_up_temp_and_export_colmap()
         #TODO: use colmap results and laser data to create 3D labeling
+        if not os.path.exists(os.path.join(recordings_folder, self.recording_id, "colmap_EM_export")):
+            print("colmap EM export does not exist yet for recording {}".format(self.recording_id))
+            return
         add_laser_coordinates_to_df(self.recording_id)
         #create a file that says that the recording has been curated
         with open(os.path.join(self.recording_folder, "curated.txt"), "w") as f:
@@ -185,5 +188,3 @@ class recordingExporter:
                     for camera_frame in camera_frames:
                         os.system("copy " + os.path.join(self.recording_folder, camera_folder, str(camera_frame) + ".png") + " " + os.path.join(event_folder, camera_folder))
             
-recording_exporter = recordingExporter('83ee44f0-c9a3-4aea-8237-8f55c0de4fd9')
-recording_exporter.export_recording()
