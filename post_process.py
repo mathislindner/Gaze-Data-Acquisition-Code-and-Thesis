@@ -3,7 +3,7 @@
 #TODO:rename this file since we are not just procssing pupil cloud data, but also depth camera data
 
 from pupilcloud import Api, ApiException
-from dependencies.recording_ingestor import recordingDownloader, recordingCurator
+from dependencies.recording_ingestor import recordingDownloader, recordingCurator, recordingExporter
 from dependencies.constants import *
 import os
 import multiprocessing
@@ -14,8 +14,11 @@ with open("configuration.yaml", 'r') as f:
     config = yaml.load(f, Loader=SafeLoader)
 api_key = str(config["API_KEY"])
 #API object for all the requests
-api = Api(api_key=api_key, host="https://api.cloud.pupil-labs.com")
-print(api.get_profile().status)
+try:
+    api = Api(api_key=api_key, host="https://api.cloud.pupil-labs.com")
+    print(api.get_profile().status)
+except:
+    print("couldn't connect to pupil cloud")
 # Returns a list of recordings
 #FIXME do not include unprocessed recordings (unprocessed in the cloud) (or do a try except in the download function)
 def get_recordings():
@@ -34,6 +37,11 @@ def download_recording(recording_id):
 def curate_recording(recording_id):
     recording_curator = recordingCurator(recording_id)
     recording_curator.curate_recording()
+
+def export_recording(recording_id):
+    recording_exporter = recordingExporter(recording_id)
+    recording_exporter.export_recording()
+
 
 def download_all_recordings():
     recording_ids = get_recordings()
@@ -56,6 +64,13 @@ def curate_all_recordings():
             to_curate.append(recording_id)
     for recording in to_curate:
         curate_recording(recording)
+
+def export_all_recordings():
+    curated_recordings = os.listdir(recordings_folder)
+    #if curated.txt is in the folder, then it is curated
+    curated_recordings = [recording for recording in curated_recordings if os.path.exists(os.path.join(recordings_folder, recording, 'curated.txt'))]
+    for recording in curated_recordings:
+        export_recording(recording)
 
 def download_all_recordings_multiprocessing():
     recording_ids = get_recordings()
@@ -85,6 +100,7 @@ if __name__ == "__main__":
     download_all_recordings()
     #TODO check if all necessary files are there before curating
     curate_all_recordings()
+    export_all_recordings()
     #download_recording('b6a73239-5f5b-4fad-ad65-fcefb27ba4d8')
     #curate_recording('b6a73239-5f5b-4fad-ad65-fcefb27ba4d8')
     #download_all_recordings_multiprocessing()

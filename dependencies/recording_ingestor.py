@@ -1,5 +1,10 @@
 import os
+import shutil
+import glob
+import sys
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 import pandas as pd
+import numpy as np
 from dependencies.synchronisation import correspond_cameras_and_gaze
 from dependencies.constants import *
 from dependencies.file_helper import move_subfolder_content_to_parent #, extract_frames
@@ -76,8 +81,8 @@ class recordingCurator:
         #TODO: use colmap results and laser data to create 3D labeling
         add_laser_coordinates_to_df(self.recording_id)
         #create a file that says that the recording has been curated
-        #with open(os.path.join(self.recording_folder, "curated.txt"), "w") as f:
-        #    f.write("This recording has been curated")
+        with open(os.path.join(self.recording_folder, "curated.txt"), "w") as f:
+            f.write("This recording has been curated")
             
 
 #Object that does the final exportation of the recording to the final folder (where we only keep the frames where the gaze is looking for 2 seconds...)
@@ -86,7 +91,8 @@ class recordingExporter:
         self.recording_id = recording_id
         self.recording_folder = os.path.join(recordings_folder,str(self.recording_id))
         self.export_folder = os.path.join(exports_folder,str(self.recording_id))
-
+    if not os.path.exists(exports_folder):
+        os.mkdir(exports_folder)
     def is_already_exported(self):
         if os.path.exists(self.export_folder):
             print("Recording already exported")
@@ -99,27 +105,49 @@ class recordingExporter:
             return
         print("Exporting recording:" + str(self.recording_id))
         #create export folder
-        #os.mkdir(self.export_folder)
-        full_df = pd.read_csv(os.path.join(self.recording_folder, "full_df.csv"),dtype={"event": str}) #importing as string because of NaN values
-        first_event_occurences = full_df.groupby("event").first().index.values
-        #after event seen for the first time in the full_df, skip 0.1 seconds and take the next 400frames
-        timestamps_start = first_event_occurences + 1/200*0.1 #0.1 seconds after the first occurence
-        for i in range(len(timestamps_start)):
-            sub_df = full_df[full_df.index > timestamps_start[i]].head(400)
-            print(sub_df)
-            event_folder = os.path.join(self.export_folder, str(i))
-            os.mkdir(event_folder)
-            #add a csv file with the gaze data
-            sub_df.to_csv(os.path.join(event_folder, "gaze_data.csv"), index = False)
-            #add wearer information to the folder
-            os.system("copy " + os.path.join(self.recording_folder, "wearer.json") + " " + event_folder)
-            for camera_folder, indices_name in zip(camera_names, indices_names):
-                os.mkdir(path = os.path.join(event_folder, camera_folder))
-                #copy frames to new camera folder according to the indices in the sub_df
-                camera_frames = sub_df[indices_name]
-                for camera_frame in camera_frames:
-                    os.system("copy " + os.path.join(self.recording_folder, camera_folder, str(camera_frame) + ".png") + " " + os.path.join(event_folder, camera_folder))
-                    
+        os.mkdir(self.export_folder)
+        full_df = pd.read_csv(os.path.join(self.recording_folder, "full_df.csv"),dtype={"events_idx": str}) #importing as string because of NaN values
+        export_df = full_df[full_df["events_idx"].notnull()].copy()
+        #if the column laser_2D_u_depth_camera does not exist, create it
+        if "laser_2D_u_depth_camera" not in export_df.columns:
+            print("no laser was found in recording{}".format(self.recording_id))
+            return
+        #also remove when the laser is not detected, laser_2D_u_depth_camera not null
+        export_df = export_df[export_df["laser_2D_u_depth_camera"].notnull()]
+        #move the frames to the export folder
+        for index_name, camera_folder in zip(indices_names,camera_folders):
+            copy_to = os.path.join(self.export_folder, camera_folder)
+            if not os.path.exists(copy_to):
+                os.mkdir(copy_to)
+            indices_for_camera = export_df[index_name].dropna().drop_duplicates().astype(int)
+            for index in indices_for_camera:
+                shutil.copy(os.path.join(self.recording_folder, camera_folder, str(index) + ".png"), copy_to)
+        #add user to the export df
+        wearer_id = json.load(open(os.path.join(self.recording_folder, "wearer.json")))["uuid"]
+        export_df["wearer_id"] = export_df.apply(lambda x: wearer_id, axis = 1)
+        #remove the unecessary columns
+        export_df = export_df.drop(columns = columns_to_remove)
+        #move necessary files and folders to the export folder
+        for folder_to_export in folders_to_export:
+            shutil.copytree(os.path.join(self.recording_folder, folder_to_export), os.path.join(self.export_folder, folder_to_export))
+        for file_to_export in files_to_export:
+            shutil.copy(os.path.join(self.recording_folder, file_to_export), os.path.join(self.export_folder, file_to_export))
+        #export the df
+        export_df.to_csv(os.path.join(self.export_folder, "export_df.csv"), index = False)
+        #just putting it here for now
+        self.extract_each_df()
+
+    #create a csv file from all the full_df.csv files in each recordings folder
+    def extract_each_df(self):
+        all_df_path = os.path.join(exports_folder, "all_df.csv")
+        all_df = pd.DataFrame()
+        #get all the files that are called full_df.csv
+        full_df_files = glob.glob(os.path.join(exports_folder, "*", "export_df.csv"))
+        for full_df_file in full_df_files:
+            full_df = pd.read_csv(full_df_file)
+            all_df = pd.concat([all_df,full_df]) #TODO: verify the axis
+        all_df.to_csv(all_df_path, index = False)
+
     #TODO: (not used atm) this function would be used differently (not in the the class since it is not related to a specific recording))        
     def export_all_recordings_by_wearer_folder(self):
         #go through all the recordings in the recordings folder and look for wearer.json
@@ -157,3 +185,5 @@ class recordingExporter:
                     for camera_frame in camera_frames:
                         os.system("copy " + os.path.join(self.recording_folder, camera_folder, str(camera_frame) + ".png") + " " + os.path.join(event_folder, camera_folder))
             
+recording_exporter = recordingExporter('83ee44f0-c9a3-4aea-8237-8f55c0de4fd9')
+recording_exporter.export_recording()
