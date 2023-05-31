@@ -3,6 +3,17 @@
 This repository contains the code for the data acquisition of the gaze data. The data acquisition is done using the Pupil Labs glasses. The code is written in Python and bash and uses the Pupil Labs API for data acquisition.
 ## Installation
 Use anaconda to install from the environment_linux.yml or environment_windows.yml file according to your operating system. The environment file contains all the dependencies required for the code to run. The code is tested on Debian GNU/Linux 10 and Windows 10.
+## Usage
+1. To start the data acquisition, run the following command:
+```python record.py```
+2. The code will give you a prompt to explain how to use it:
+```---> Press right arrow to start recording```
+```---> Press left arrow to stop recording```
+```---> Press space to trigger an event```
+```---> Press del to cancel the recording```
+```---> Press esc to exit```
+3. Once the recording is finished, wait for the recording to be uploaded to the pupil cloud and processed and the run
+```python post_process.py```
 
 ## Protocol
 The protocol for the data acquisition is as follows:
@@ -13,3 +24,6 @@ The protocol for the data acquisition is as follows:
 5. The laser pointer will be pointed at each of the 5 points, one by one, and the participant is asked to look at the laser pointer for 3 seconds. The operator will ask for a confirmation from the participant before pressing space to trigger an event.
 6. The participant is asked to move the next position and the repeat step 5.
 7. The recording is stopped.
+
+
+## Examples of the data
