@@ -184,7 +184,7 @@ def add_laser_coordinates_to_df(recording_id):
     df['laser_3D_y_colmap'] = df['laser_3D_y_colmap']
     df['laser_3D_z_colmap'] = df['laser_3D_z_colmap']
     points_in_colmap = df[['laser_3D_x_colmap','laser_3D_y_colmap','laser_3D_z_colmap']].to_numpy()
-    laser_2d_in_world_coordinates = project_3D_points_to_pupil_world(points_in_colmap, recording_id, world_camera_idx)
+    #laser_2d_in_world_coordinates = project_3D_points_to_pupil_world(points_in_colmap, recording_id, world_camera_idx)
     
     #df['laser_2D_u_world_camera'] = laser_2d_in_world_coordinates[:,0]
     #df['laser_2D_v_world_camera'] = laser_2d_in_world_coordinates[:,1]
