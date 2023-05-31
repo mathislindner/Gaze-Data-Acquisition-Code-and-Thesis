@@ -8,58 +8,25 @@ from time import time_ns
 
 class depthAndRgbCameras():
     def __init__(self):
-        self.pipeline = None
-        self.config = None
-        self.profile = None
-        self.i = 0
-        print("depth and rgb cameras initialized")
-
-    def start_recording(self, recording_id):
         self.pipeline = rs.pipeline()
         self.config = rs.config()
-        color_sensor = self.config.resolve(rs.pipeline_wrapper(self.pipeline)).get_device().query_sensors()[1]
-        self.change_options_for_laser(color_sensor)
+        self.i = 0
+
+    def start_recording(self, recording_id):
         recording_path = os.path.join(recordings_folder, recording_id, "realsensed435.bag")
-        self.config.enable_record_to_file(recording_path)
         self.config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
         self.config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
-
+        self.config.enable_record_to_file(recording_path)
         self.pipeline.start(self.config)
-        #self.color_sensor = self.profile.get_device().query_sensors()[1]
-        #reset the color sensor options
-        #self.color_sensor.reset_device_options_to_default()
-        #self.color_sensor.set_option(rs.option.enable_auto_exposure, True)
-        #after 105 frames the exposure is set to 350
-        #for i in range(105):
-        #    self.pipeline.wait_for_frames()
-        #set exposure
-        #self.change_options_for_laser()
-
 
     def stop_recording(self):
         self.pipeline.stop()
-        print(self.pipeline)
-        print("depth and rgb cameras stopped")
+        self.config.disable_all_streams()
 
     def cancel_recording(self):
         self.pipeline.stop()
         self.config.disable_all_streams()
         #the recording is deleted automatically in the acquisition logic
-
-
-    #TODO
-    def change_options_for_laser(self,color_sensor):
-        '''
-        exposure: int
-        changed the exposure of the color camera while recording
-        'Defines general configuration controls. These can generally be mapped to camera UVC controls, and can be set / queried at any time unless stated otherwise.'
-        '''
-        #turn off auto exposure
-        color_sensor.set_option(rs.option.enable_auto_exposure, False)
-        ##set exposure
-        color_sensor.set_option(rs.option.exposure, value = 350) #350
-        color_sensor.set_option(rs.option.sharpness, value = 50)
-        color_sensor.set_option(rs.option.brightness, value = 5)
 
 class PupilCamera():
     def __init__(self, ip, port):
