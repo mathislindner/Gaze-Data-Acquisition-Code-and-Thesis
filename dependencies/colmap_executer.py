@@ -122,7 +122,10 @@ def clean_up_temp_and_export_colmap():
             #delete colmap ws from scratch_net_tmp
             shutil.rmtree(os.path.join(scratch_net_folder_tmp, recording_id, "colmap_EM_ws"))
             #after having moved the folders, export colmap files (images, cameras, points3D) to a folder in the recordings folder
-            export_colmap_ws_to_text(recording_id, os.path.join(recordings_folder, recording_id, "colmap_EM_ws"))
+            try:
+                export_colmap_ws_to_text(recording_id, os.path.join(recordings_folder, recording_id, "colmap_EM_ws"))
+            except:
+                print("colmap failed for recording: " + recording_id)
         #check AR
         if os.path.exists(os.path.join(scratch_net_folder_tmp, recording_id, "colmap_AR_ws", "automatic_reconstruction_done.txt")):
             print("copying colmap ws from scratch_net to recordings folder for recording: " + recording_id)

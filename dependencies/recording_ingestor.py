@@ -80,7 +80,7 @@ class recordingCurator:
         clean_up_temp_and_export_colmap()
         #TODO: use colmap results and laser data to create 3D labeling
         if not os.path.exists(os.path.join(recordings_folder, self.recording_id, "colmap_EM_export")):
-            print("colmap EM export does not exist yet for recording {}".format(self.recording_id))
+            print("colmap EM export does not exist, or failed for recording {}".format(self.recording_id))
             return
         add_laser_coordinates_to_df(self.recording_id)
         #create a file that says that the recording has been curated
