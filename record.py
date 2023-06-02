@@ -15,7 +15,7 @@ class acquisitionLogic():
         self.event_id = None
         self.recording_id = "temp"
         self.pupil_camera = PupilCamera(ip, port)
-        #self.pupil_camera = PupilCameraTest()
+             #self.pupil_camera = PupilCameraTest()
         self.depth_and_rgb_cameras = depthAndRgbCameras()
 
         self.keyboard_listener = keyboard.Listener(on_press=self.on_press)

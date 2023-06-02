@@ -95,12 +95,12 @@ class recordingExporter:
         self.export_folder = os.path.join(exports_folder,str(self.recording_id))
     if not os.path.exists(exports_folder):
         os.mkdir(exports_folder)
+        
     def is_already_exported(self):
         if os.path.exists(self.export_folder):
             print("Recording already exported")
             return True
-        else:
-            return False
+        return False
         
     def export_recording(self):
         if self.is_already_exported():

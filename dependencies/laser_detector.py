@@ -81,7 +81,7 @@ def get_aruco_rectangle(image_array):
         print("only {} markers detected".format(len(ids)))
         return None
         
-    import pyrealsense2 as rs
+import pyrealsense2 as rs
 def deproject_pixels_to_points(u_array, v_array,depth, depth_camera_idx_array):
     # Create a pipeline and start streaming frames
     pipeline = rs.pipeline()
@@ -116,6 +116,8 @@ def deproject_pixels_to_points(u_array, v_array,depth, depth_camera_idx_array):
 
 def get_depth_of_pixel(depth_array, pixel):
     #get the depth of the pixel
+    if pixel[0] < 0 or pixel[0] >= depth_array.shape[0] or pixel[1] < 0 or pixel[1] >= depth_array.shape[1]:
+        depth = 0
     depth = depth_array[pixel[0]][pixel[1]]
     return depth
 
@@ -141,6 +143,8 @@ def get_3D_laser_position_relative_to_depth_camera(laser_2D_position, depth_arra
         return None
     #get the depth of the pixel
     depth_of_pixel = get_depth_of_pixel(depth_array_corresponding_to_image, laser_2D_position)
+    if depth_of_pixel == 0:
+        return np.array([None, None, None])
     #get the 3D coordinates of the pixel
     coordinates_3D = rs.deproject_pixel_to_point(laser_2D_position, depth_of_pixel)
     return coordinates_3D
