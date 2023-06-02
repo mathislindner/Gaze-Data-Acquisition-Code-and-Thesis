@@ -74,7 +74,6 @@ class recordingCurator:
         correspond_cameras_and_gaze(self.recording_id)
         undistort_world_camera(self.recording_id)
         #run COLMAP on the world camera frames
-        print("Running colmap on recording:" + str(self.recording_id))
         run_colmap_exhaustive_matcher(self.recording_id)
         #run_colmap_automatic_reconstructor(self.recording_id)
         clean_up_temp_and_export_colmap()

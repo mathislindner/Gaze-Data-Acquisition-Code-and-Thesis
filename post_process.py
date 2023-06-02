@@ -59,7 +59,8 @@ def curate_all_recordings():
         recording = os.path.join(recordings_folder, recording)
         #cannot synchronize if there is no local_synchronization file!
         local_synchronization_file = os.path.join(recording, "local_synchronisation.json")
-        if not os.path.exists(os.path.join(recording,'curated.txt')) and os.path.exists(local_synchronization_file):
+        gaze_csv = os.path.join(recording, "gaze.csv")
+        if not os.path.exists(os.path.join(recording,'curated.txt')) and os.path.exists(local_synchronization_file) and os.path.exists(gaze_csv):
             recording_id = recording.split("/")[-1]
             to_curate.append(recording_id)
     for recording in to_curate:
@@ -101,9 +102,4 @@ if __name__ == "__main__":
     #TODO check if all necessary files are there before curating
     curate_all_recordings()
     export_all_recordings()
-    #download_recording('b6a73239-5f5b-4fad-ad65-fcefb27ba4d8')
-    #curate_recording('b6a73239-5f5b-4fad-ad65-fcefb27ba4d8')
-    #download_all_recordings_multiprocessing()
-    #curate_all_recordings_multiprocessing()
-    #export_all_recordings_multiprocessing()
 

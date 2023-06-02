@@ -137,6 +137,9 @@ def clean_up_temp_and_export_colmap():
             export_colmap_ws_to_text(recording_id, os.path.join(recordings_folder, recording_id, "colmap_AR_ws"))
 
 def export_colmap_ws_to_text(recording_id, colmap_ws_folder):
+    if not os.path.exists(os.path.join(colmap_ws_folder, 'exhaustive_matcher_out', 'world_and_depth','sparse','cameras.bin')):
+        print("colmap failed for recording: " + recording_id)
+        return
     colmap_type = colmap_ws_folder.split("_")[-2]
     recording_folder = os.path.join(recordings_folder, str(recording_id))
     colmap_export_folder = os.path.join(recording_folder, "colmap_{}_export".format(colmap_type))
@@ -145,6 +148,7 @@ def export_colmap_ws_to_text(recording_id, colmap_ws_folder):
     if colmap_type == "EM":
         model_path = os.path.join(colmap_ws_folder, 'exhaustive_matcher_out', 'world_and_depth','sparse')
         cameras, images, points3D = read_model(os.path.join(model_path), ".bin")
+        #FIXME:APPLY SCALE TO COLMAP COORDINATES
     elif colmap_type == "AR":
         print("colmap AR export not supported yet")
     else:
