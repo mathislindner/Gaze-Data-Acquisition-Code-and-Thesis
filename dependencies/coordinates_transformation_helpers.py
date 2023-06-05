@@ -163,7 +163,6 @@ def project_3D_points_to_pupil_world(points, recording_id, world_camera_idx):
             array_projected_points[i] = np.array([np.nan, np.nan])
             continue
         #if point in nan, skip, add nan to array_projected_points
-        print(point)
         rotation_matrix = read_write_model.qvec2rotmat(colmap_world_image.qvec)
         translation_matrix = colmap_world_image.tvec
         world_camera_extrinsics = np.eye(4)
@@ -178,7 +177,9 @@ def project_3D_points_to_pupil_world(points, recording_id, world_camera_idx):
         points_2D = points_3D @ world_camera_instrinsics_matrix.T
         points_2D = points_2D[:, :2] / points_2D[:, 2:]
         points_2D = points_2D.astype(int)
-        array_projected_points[i] = points_2D
+        #array_projected_points[i] = points_2D
+        #FIXME: temporary
+        array_projected_points[i] = np.array([np.nan, np.nan])
     return array_projected_points
 
 """recording_folder = os.path.join(recordings_folder, "83ee44f0-c9a3-4aea-8237-8f55c0de4fd9")
