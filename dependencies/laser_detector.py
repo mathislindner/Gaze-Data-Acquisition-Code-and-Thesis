@@ -117,7 +117,7 @@ def deproject_pixels_to_points(u_array, v_array,depth, depth_camera_idx_array):
 def get_depth_of_pixel(depth_array, pixel):
     #get the depth of the pixel
     if pixel[0] < 0 or pixel[0] >= depth_array.shape[0] or pixel[1] < 0 or pixel[1] >= depth_array.shape[1]:
-        depth_array[pixel[0]][pixel[1]] = 0
+        return 0
     depth = depth_array[pixel[0]][pixel[1]]
     return depth
 
