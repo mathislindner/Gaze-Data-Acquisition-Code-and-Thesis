@@ -117,7 +117,7 @@ def deproject_pixels_to_points(u_array, v_array,depth, depth_camera_idx_array):
 def get_depth_of_pixel(depth_array, pixel):
     #get the depth of the pixel
     if pixel[0] < 0 or pixel[0] >= depth_array.shape[0] or pixel[1] < 0 or pixel[1] >= depth_array.shape[1]:
-        depth = 0
+        depth_array[pixel[0]][pixel[1]] = 0
     depth = depth_array[pixel[0]][pixel[1]]
     return depth
 
@@ -188,10 +188,9 @@ def add_laser_coordinates_to_df(recording_id):
     df['laser_3D_y_colmap'] = df['laser_3D_y_colmap']
     df['laser_3D_z_colmap'] = df['laser_3D_z_colmap']
     points_in_colmap = df[['laser_3D_x_colmap','laser_3D_y_colmap','laser_3D_z_colmap']].to_numpy()
-    #laser_2d_in_world_coordinates = project_3D_points_to_pupil_world(points_in_colmap, recording_id, world_camera_idx)
-    
-    #df['laser_2D_u_world_camera'] = laser_2d_in_world_coordinates[:,0]
-    #df['laser_2D_v_world_camera'] = laser_2d_in_world_coordinates[:,1]
+    laser_2d_in_world_coordinates = project_3D_points_to_pupil_world(points_in_colmap, recording_id, world_camera_idx)
+    df['laser_2D_u_world_camera'] = laser_2d_in_world_coordinates[:,0]
+    df['laser_2D_v_world_camera'] = laser_2d_in_world_coordinates[:,1]
     df.to_csv(df_path, index=False)
     
     
