@@ -118,6 +118,9 @@ class recordingExporter:
         export_df = export_df[export_df["laser_2D_u_depth_camera"].notnull()]
         #move the frames to the export folder
         for index_name, camera_folder in zip(indices_names,camera_folders):
+            #if the camera is the world camera, we need to copy the undistorted frames instead
+            if camera_folder == "PI_world_v1_ps1":
+                camera_folder = "PI_world_v1_ps1_undistorted"
             copy_to = os.path.join(self.export_folder, camera_folder)
             if not os.path.exists(copy_to):
                 os.mkdir(copy_to)
