@@ -78,8 +78,8 @@ class recordingCurator:
         #run_colmap_automatic_reconstructor(self.recording_id)
         clean_up_temp_and_export_colmap()
         #TODO: use colmap results and laser data to create 3D labeling
-        if not os.path.exists(os.path.join(recordings_folder, self.recording_id, "colmap_EM_export")):
-            print("colmap EM export does not exist, or failed for recording {}".format(self.recording_id))
+        if not os.path.exists(os.path.join(recordings_folder, self.recording_id, "colmap_EM_export", "cameras.txt")):
+            print("colmap EM export does not exist yet for recording {}".format(self.recording_id))
             return
         add_laser_coordinates_to_df(self.recording_id)
         #create a file that says that the recording has been curated
@@ -97,7 +97,7 @@ class recordingExporter:
         os.mkdir(exports_folder)
         
     def is_already_exported(self):
-        if os.path.exists(self.export_folder):
+        if os.path.exists(os.path.join(self.export_folder, "exported.txt")) or os.path.exists(os.path.join(self.export_folder)): #change this later
             print("Recording already exported")
             return True
         return False
@@ -141,6 +141,9 @@ class recordingExporter:
         export_df.to_csv(os.path.join(self.export_folder, "export_df.csv"), index = False)
         #just putting it here for now
         self.extract_each_df()
+        #create a file that says that the recording has been exported
+        with open(os.path.join(self.export_folder, "exported.txt"), "w") as f:
+            f.write("This recording has been exported")
 
     #create a csv file from all the full_df.csv files in each recordings folder
     def extract_each_df(self):

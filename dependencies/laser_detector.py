@@ -152,7 +152,7 @@ def get_3D_laser_position_relative_to_depth_camera(laser_2D_position, depth_arra
 
 def add_laser_coordinates_to_df(recording_id):
     #TODO:add the scale transformation to COLMAP coordinates txt file
-    if not os.path.exists(os.path.join(recordings_folder, recording_id, "colmap_EM_export")):
+    if not os.path.exists(os.path.join(recordings_folder, recording_id, "colmap_EM_export", "cameras.txt")):
         print("colmap EM export does not exist yet for recording {}".format(recording_id))
         return
     #paths
@@ -164,7 +164,10 @@ def add_laser_coordinates_to_df(recording_id):
     #imports
     depth_array = np.load(depth_array_path)['arr_0']
     df = pd.read_csv(df_path)
-
+    # if laser wsa already added, skip
+    if 'laser_2D_u_depth_camera' in df.columns:
+        print("laser coordinates already added to df for recording {}".format(recording_id))
+        return
     #create columns for laser 2D and 3D coordinates
     df[['laser_2D_u_depth_camera','laser_2D_v_depth_camera']] = df['depth_camera_idx'].apply(lambda x: get_2D_laser_position(cv2.imread(os.path.join(rgb_pngs_path, str(x) + ".png")))).to_list()
     #interpolate the laser 2D coordinates
