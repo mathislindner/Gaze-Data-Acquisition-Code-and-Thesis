@@ -97,7 +97,7 @@ class recordingExporter:
         os.mkdir(exports_folder)
         
     def is_already_exported(self):
-        if os.path.exists(os.path.join(self.export_folder, "exported.txt")) or os.path.exists(os.path.join(self.export_folder)): #change this later
+        if os.path.exists(os.path.join(self.export_folder, "exported.txt")): # or os.path.exists(os.path.join(self.export_folder)): #change this later
             print("Recording already exported")
             return True
         return False
@@ -107,7 +107,8 @@ class recordingExporter:
             return
         print("Exporting recording:" + str(self.recording_id))
         #create export folder
-        os.mkdir(self.export_folder)
+        if not os.path.exists(self.export_folder):
+            os.mkdir(self.export_folder)
         full_df = pd.read_csv(os.path.join(self.recording_folder, "full_df.csv"),dtype={"events_idx": str}) #importing as string because of NaN values
         export_df = full_df[full_df["events_idx"].notnull()].copy()
         #if the column laser_2D_u_depth_camera does not exist, create it
@@ -118,10 +119,10 @@ class recordingExporter:
         export_df = export_df[export_df["laser_2D_u_depth_camera"].notnull()]
         #move the frames to the export folder
         for index_name, camera_folder in zip(indices_names,camera_folders):
+            copy_to = os.path.join(self.export_folder, camera_folder)
             #if the camera is the world camera, we need to copy the undistorted frames instead
             if camera_folder == "PI_world_v1_ps1":
                 camera_folder = "PI_world_v1_ps1_undistorted"
-            copy_to = os.path.join(self.export_folder, camera_folder)
             if not os.path.exists(copy_to):
                 os.mkdir(copy_to)
             indices_for_camera = export_df[index_name].dropna().drop_duplicates().astype(int)
@@ -134,7 +135,7 @@ class recordingExporter:
         export_df = export_df.drop(columns = columns_to_remove)
         #move necessary files and folders to the export folder
         for folder_to_export in folders_to_export:
-            shutil.copytree(os.path.join(self.recording_folder, folder_to_export), os.path.join(self.export_folder, folder_to_export))
+            shutil.copytree(os.path.join(self.recording_folder, folder_to_export), os.path.join(self.export_folder, folder_to_export), dirs_exist_ok=True)
         for file_to_export in files_to_export:
             shutil.copy(os.path.join(self.recording_folder, file_to_export), os.path.join(self.export_folder, file_to_export))
         #export the df
