@@ -91,18 +91,22 @@ def plot_one_yaw_pitch_roll():
     recording_ids = [recording_id for recording_id in recording_ids if os.path.exists(os.path.join(exports_folder, recording_id, "colmap_EM_export", "cameras.txt"))]
     random.shuffle(recording_ids)
     yaw_pitch_roll = get_yaw_pitch_roll_from_quaternion(get_image_quaternions(recording_ids[0]))
+
     #create a figure with 3 subplots in polar coordinates
-    fig, ax = plt.subplots(3,1, subplot_kw=dict(projection='polar'))
+    fig, ax = plt.subplots(1,3, subplot_kw=dict(projection='polar'))
     #add a title
     plt.title(recording_ids[0][:16])
     #change figure size
-    fig.set_size_inches(5, 15)
+    fig.set_size_inches(15, 10)
     for i in range(3):
         ax[i].scatter(yaw_pitch_roll[:,i], np.arange(len(yaw_pitch_roll)))
         ax[i].set_theta_zero_location("N")
         #add a title
         ax[i].set_title(["Yaw", "Pitch", "Roll"][i])
         ax[i].set_yticklabels([])
+        #put middle plot lower than the other two
+        if i == 1:
+            ax[i].xaxis.set_label_coords(0.5, -5)
 
     
     #put space between the subplots
@@ -113,6 +117,7 @@ def plot_one_yaw_pitch_roll():
 
     plt.savefig("plots/yaw_pitch_roll{}.png".format(recording_ids[0]))
 
-plot_one_yaw_pitch_roll()
+for i in range(20):
+    plot_one_yaw_pitch_roll()
 #plot_one_path()
 #plot_a_few_paths()
