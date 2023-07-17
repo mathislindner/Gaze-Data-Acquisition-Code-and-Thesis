@@ -181,9 +181,3 @@ def project_3D_points_to_pupil_world(points, recording_id, world_camera_idx):
         #FIXME: temporary
         array_projected_points[i] = np.array([np.nan, np.nan])
     return array_projected_points
-
-"""recording_folder = os.path.join(recordings_folder, "83ee44f0-c9a3-4aea-8237-8f55c0de4fd9")
-full_df = pd.read_csv(os.path.join(recording_folder, "full_df.csv"))
-world_camera_idx = full_df["world_idx"].to_numpy()
-points = np.array([[0,0,0], [1,1,1]])
-project_3D_points_to_pupil_world(points,"83ee44f0-c9a3-4aea-8237-8f55c0de4fd9",world_camera_idx)"""

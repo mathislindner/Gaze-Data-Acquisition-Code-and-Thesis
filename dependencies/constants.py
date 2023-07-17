@@ -13,19 +13,9 @@ folders_to_export = ['colmap_EM_export']
 
 username = getpass.getuser()
 host = socket.gethostname()
-if username == 'nipopovic' and host == 'archer':
-    recordings_folder = "/home/nipopovic/MountedDirs/aegis_cvl/aegis_cvl_root/data/data_collection/test_recordings/"
-    #recordings_folder = "/home/nipopovic/MountedDirs/aegis_cvl/aegis_cvl_root/data/data_collection/recordings/"
-elif username == 'Mathis':
-    recordings_folder = "C:/Users/Mathis/Documents/GitHub/gaze_data_acquisition/mathis/recordings/"
-elif username == 'mathi':
-    recordings_folder = "C:/Users/mathi/Documents/GitHub/gaze_data_acquisition/mathis/recordings/"
-    exports_folder = "C:/Users/mathi/Documents/GitHub/gaze_data_acquisition/mathis/exports/"
-elif username == "mlindner":
-    #recordings_folder = "/scratch_net/snapo/mlindner/docs/gaze_data_acquisition/oos/recordings"
-    scratch_net_folder_tmp = "/scratch_net/snapo/mlindner/tmp" #this folder is to run colmap, which is why it s in the scratch net!
-    recordings_folder = "/srv/beegfs02/scratch/aegis_cvl/data/data_collection/recordings"
-    exports_folder = "/srv/beegfs02/scratch/aegis_cvl/data/data_collection/exports"
-    #recordings_folder = "/scratch_net/snapo/mlindner/recordings"
+if username == 'yourusername' and host == 'yourhostname':
+    scratch_net_folder_tmp = "temporary/folder/for/colmap/called/tmp" #this folder is to run colmap, which is why it s in the scratch net!
+    recordings_folder = "/this/one/is/for/your/recordings"
+    exports_folder = "/lastly/for/your/exports"
 else:
     raise AssertionError

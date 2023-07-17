@@ -36,13 +36,6 @@ def find_laser_in_image(image, rectangle):
         #find the middle of all contours
         x = int(np.mean([np.mean(contour[:,:,0]) for contour in contours]))
         y = int(np.mean([np.mean(contour[:,:,1]) for contour in contours]))
-        #print("x: {}, y: {}".format(x,y))
-    #draw a circle around the center of the laser
-    #cv2.circle(image, (x, y), 10, (0, 255, 0), 2)
-    #cv2.imshow("image", image)
-    #cv2.waitKey(0)
-    #save the image\
-    #cv2.imwrite("laser_detection.png", image)
     return x,y
 
 #get aruco projection rectangle ids to corners mapping
@@ -196,14 +189,3 @@ def add_laser_coordinates_to_df(recording_id):
     #df['laser_2D_v_world_camera'] = laser_2d_in_world_coordinates[:,1]
     df.to_csv(df_path, index=False)
     
-    
-#i=154
-#image_path = os.path.join(recordings_folder, "4c92b0d3-3abe-4745-9292-25433dab8aae", "rgb_pngs", "{}.png".format(i))
-#image = cv2.imread(image_path)
-#x,y = get_2D_laser_position(image)
-#print(x,y)
-#cv2.circle(image, (x, y), 10, (0, 255, 0), 2)
-#cv2.imshow("image", image)
-#cv2.waitKey(0)
-
-#add_laser_coordinates_to_df("4c92b0d3-3abe-4745-9292-25433dab8aae")

@@ -77,35 +77,3 @@ colmap bundle_adjuster \
 
 #create text file that says that the exhaustive matching is done
 touch $EM_WS_PATH/exhaustive_matching_done.txt
-
-##################################################################################################
-
-
-
-
-#--Mapper.ba_refine_extra_params 0 \
-#--Mapper.ba_refine_focal_length 0
-
-
-
-#mkdir $WS_PATH/colmap_out/dense
-#colmap image_undistorter \
-#    --image_path $DATASET_PATH/images \
-#    --input_path $WS_PATH/colmap_out/sparse/0 \
-#    --output_path $WS_PATH/colmap_out/dense \
-#    --output_type COLMAP
-#
-#colmap patch_match_stereo \
-#    --workspace_path $WS_PATH/colmap_out/dense \
-#    --workspace_format COLMAP \
-#    --PatchMatchStereo.geom_consistency true
-#
-#colmap stereo_fusion \
-#    --workspace_path $WS_PATH/colmap_out/dense \
-#    --workspace_format COLMAP \
-#    --input_type geometric \
-#    --output_path $WS_PATH/colmap_out/dense/fused.ply
-#
-#colmap poisson_mesher \
-#    --input_path $WS_PATH/colmap_out/dense/fused.ply \
-#    --output_path $WS_PATH/colmap_out/dense/meshed-poisson.ply
