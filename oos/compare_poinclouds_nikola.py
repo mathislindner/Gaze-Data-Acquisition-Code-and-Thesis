@@ -151,42 +151,7 @@ def get_depth_cam_model(recording_path, select_frame):
         y = (v - intrinsics.ppy) / intrinsics.fy
         # Add 3rd coordinate and reshape to vector
         xyz_3d = aligned_depth_image[..., None] * np.dstack((x, y, np.ones_like(u)))
-
-        # import matplotlib.pyplot as plt
-        # plt.imshow(color_image)
-        # plt.savefig('depth_img.png')
-        # plt.imshow(color_image)
-        # plt.imshow(depth_image, alpha=0.6)
-        # plt.show()
-        # plt.close()
-        # plt.imshow(aligned_color_image)
-        # plt.imshow(aligned_depth_image, alpha=0.6)
-        # plt.show()
-        # plt.close()
-
-        # o3d_pointcloud = o3d.geometry.PointCloud()
-        # o3d_pointcloud.points = o3d.utility.Vector3dVector(xyz_3d.reshape((h*w, 3)))
-        # o3d_pointcloud.colors = o3d.utility.Vector3dVector(aligned_color_image.reshape((h*w, 3))/255.0)
-        # plot_o3d_geometries([o3d_pointcloud], plotly=True)
-
         return aligned_color_image, aligned_depth_image, xyz_3d
-
-        # # Processing blocks
-        # pc = rs.pointcloud()
-        # colorizer = rs.colorizer()
-
-        # points = pc.calculate(depth_frame)
-        # pc.map_to(color_frame)
-
-        # # Pointcloud data to arrays
-        # v, t = points.get_vertices(), points.get_texture_coordinates()
-        # verts = np.asanyarray(v).view(np.float32).reshape(-1, 3)  # xyz
-        # texcoords = np.asanyarray(t).view(np.float32).reshape(-1, 2)  # uv
-
-        # o3d_pointcloud = o3d.geometry.PointCloud()
-        # o3d_pointcloud.points = o3d.utility.Vector3dVector(verts)
-        # #o3d_pointcloud.colors = o3d.utility.Vector3dVector(colmap_rgb_colors)
-        # plot_o3d_geometries([o3d_pointcloud], plotly=True)
 
 
 #TODO: instead of just using the 90th frame, average over a few frames from the beginning of the recording
@@ -378,10 +343,8 @@ colmap_proj_d_tmp[np.linalg.norm(colmap_proj_d_tmp, axis=-1) == 0.0] = np.ones(3
 plot_o3d_geometries([colmap_sparse_pointcloud], plotly=remote_vis)
 plot_o3d_geometries([depth_pointcloud], plotly=remote_vis)
 plot_o3d_geometries([depth_pointcloud_sel], plotly=remote_vis)
-plot_o3d_geometries([depth_pointcloud_sel, colmap_sparse_pointcloud], plotly=remote_vis) # TODO For Mathis: check this plot out (table/checkerboard overlapping)
+plot_o3d_geometries([depth_pointcloud_sel, colmap_sparse_pointcloud], plotly=remote_vis) 
 plot_o3d_geometries([depth_pointcloud, colmap_sparse_pointcloud], plotly=remote_vis)
-#plot_o3d_geometries([depth_pointcloud, colmap_dense_pointcloud], plotly=remote_vis)
-#plot_o3d_geometries([depth_pointcloud, colmap_dense_ply_pointcloud], plotly=remote_vis)
 
 import matplotlib.pyplot as plt
 plt.figure()
