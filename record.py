@@ -15,12 +15,11 @@ class acquisitionLogic():
         self.event_id = None
         self.recording_id = "temp"
         self.pupil_camera = PupilCamera(ip, port)
-             #self.pupil_camera = PupilCameraTest()
+         #self.pupil_camera = PupilCameraTest() #to test without having the pupil camera running
         self.depth_and_rgb_cameras = depthAndRgbCameras()
 
         self.keyboard_listener = keyboard.Listener(on_press=self.on_press)
         self.keyboard_listener.start()
-        #self.keyboard_listener.wait()
         
         print("to start recording press right arrow")
         print("to stop recording press left arrow")
@@ -28,6 +27,7 @@ class acquisitionLogic():
         print("to cancel recording press delete")
         print("to exit press esc")
         self.keyboard_listener.join()
+        
     def on_press(self, key):
         if key == keyboard.Key.right:
             self.start_recording_all_devices()
@@ -55,8 +55,7 @@ class acquisitionLogic():
 
         elif key != keyboard.Key.right and key != keyboard.Key.left and key != keyboard.Key.space and key != keyboard.Key.esc:
             print('key doesn t exist')
-
-
+            
     def start_recording_all_devices(self):
         self.recording_bool = True
         self.event_id = 0
