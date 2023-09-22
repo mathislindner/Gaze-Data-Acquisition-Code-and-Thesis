@@ -1,6 +1,4 @@
-#https://cloud.pupil-labs.com/workspace/9ae5e987-5235-486f-8552-427014bbedcd/recordings
 #this script should run in the background and download all the recordings periodically and process them
-#TODO:rename this file since we are not just procssing pupil cloud data, but also depth camera data
 
 from pupilcloud import Api, ApiException
 from dependencies.recording_ingestor import recordingDownloader, recordingCurator, recordingExporter
@@ -99,7 +97,6 @@ def curate_all_recordings_multiprocessing():
 #print current directory
 if __name__ == "__main__":
     download_all_recordings()
-    #TODO check if all necessary files are there before curating
     curate_all_recordings()
     export_all_recordings()
 
